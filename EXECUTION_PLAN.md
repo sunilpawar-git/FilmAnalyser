@@ -76,7 +76,7 @@ Then pause for your approval.
 - **Exit criteria:** green build; RSS flatness verified.
 
 ## Phase 3: Storage, versioning, resumability
-**Status: implemented and locally green; NOT complete: waiting for CI on both OSes and your approval, and P3-1 (see "Final phase: Pending items"). Handoff: `docs/handoff/phase-3.md`.**
+**Status: implemented and locally green; NOT complete: waiting for CI on both OSes and your approval, and P3-1, P3-2 (see "Final phase: Pending items"). Handoff: `docs/handoff/phase-3.md`.**
 
 **Goal:** Features persist compactly; a crash mid-film resumes without re-decoding finished chunks.
 - **Tests first:** schema round-trip, version mismatch rejected, append-only writes, resume after a simulated crash at chunk N, corrupted manifest handled.
@@ -182,5 +182,6 @@ Anything unfinished in an earlier phase is consolidated here. A phase listed bel
 | P2-2 | Phase 2 | ~~macOS CI ffmpeg not exactly pinned~~ **DONE 2026-11-11:** pinned static 9.0.2 build, vendor-published sha256 verified, cached (DECISIONS #40); CI run green, logs `ffmpeg version 9.0.2` | | |
 
 | P3-1 | Phase 3 | Resume on **real footage** is unverified: resumed chunks are bit-identical to an uninterrupted run only on the synthetic clip (constant frame rate equal to the analysis rate). With another source rate, input seeking may shift the sampling grid by less than one source frame (DECISIONS #45) | Phase 3 has only synthetic fixtures; the real-clip smoke test is a Phase 4 deliverable | In the Phase 4 real-clip smoke test: kill the run mid-clip, resume, and assert the stored features equal an uninterrupted run's (or measure and bound the difference and record it in DECISIONS) |
+| P3-2 | Phase 3 | **CI has not run on the Phase 3 branch.** `ci.yml` triggers only on pushes to `main` and on pull requests, so pushing `feat/phase-3-storage` started no run (checked with `gh run list`). Linux ffmpeg 6.0.1 and macOS 9.0.2 behaviour of the new resume seek and the kill test is therefore unproven | Opening a PR was not approved, and adding a branch trigger to `ci.yml` is a workflow change not asked for | Either open the PR (CI runs on it) or approve adding `feat/**` to the push triggers; then fix whatever differs between the OSes |
 
-Phases 1 and 2 are complete. Phase 3 is not complete until P3-1 is closed and CI is green.
+Phases 1 and 2 are complete. Phase 3 is not complete until P3-1 and P3-2 are closed.
