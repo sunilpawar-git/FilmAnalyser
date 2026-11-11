@@ -8,10 +8,33 @@ tagline = "A craft analyser: it measures form and flags notable sections with ti
 [cli]
 version = "$name $version"
 
-[error]
-internal = "An unexpected internal error occurred."
-input = "The input is invalid."
-decode = "The film could not be decoded."
-model = "A model file is missing or failed its integrity check."
-storage = "The feature store is unreadable or incompatible."
-analysis = "The analysis could not be completed."
+# Every error category has a `default` message; specific messages sit beside it. Placeholders are
+# filled from the error's fields (basenames only, never full paths).
+[error.internal]
+default = "An unexpected internal error occurred."
+
+[error.input]
+default = "The input is invalid."
+bad_setting = "The setting '$name' has an invalid value."
+not_found = "The file '$name' does not exist."
+not_a_file = "'$name' is not a regular file."
+unreadable = "The file '$name' cannot be read (check its permissions)."
+invalid_path = "The path '$name' is not valid."
+
+[error.decode]
+default = "The film could not be decoded."
+tool_missing = "The required tool '$tool' was not found. Install ffmpeg (it provides ffprobe)."
+probe_failed = "'$name' could not be inspected; it may not be a valid video file."
+no_video = "'$name' contains no video stream."
+no_duration = "The length of '$name' could not be determined."
+ffmpeg_failed = "ffmpeg stopped while decoding '$name' (exit code $code)."
+no_frames = "No video frames could be decoded from '$name'."
+
+[error.model]
+default = "A model file is missing or failed its integrity check."
+
+[error.storage]
+default = "The feature store is unreadable or incompatible."
+
+[error.analysis]
+default = "The analysis could not be completed."

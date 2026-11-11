@@ -1,5 +1,6 @@
 """Prove the guards work: plant each deliberate violation, run the relevant check, require a
-failure for the stated reason, then remove the violation. Exit 1 if any guard stays silent."""
+failure for the stated reason, then remove the violation (or restore the mutated file).
+Exit 1 if any guard stays silent."""
 
 import subprocess
 import sys
@@ -11,11 +12,24 @@ REPO = Path(__file__).resolve().parents[1]
 TIMEOUT_SECONDS = 300
 
 
+def _content(probe: Probe, original: str | None) -> str | None:
+    """File text to plant: the probe's own content, or the real file with one text mutated.
+    None when a mutation target is not found exactly once (the probe is stale)."""
+    if probe.mutate is None or original is None:
+        return probe.content
+    old, new = probe.mutate
+    return original.replace(old, new) if original.count(old) == 1 else None
+
+
 def run_probe(probe: Probe) -> str | None:
     """None when the guard caught the violation; otherwise a description of what went wrong."""
     target = REPO / probe.path
+    original = target.read_text(encoding="utf-8") if probe.mutate else None
+    content = _content(probe, original)
+    if content is None:
+        return f"mutation target text not found exactly once in {probe.path}"
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(probe.content, encoding="utf-8")
+    target.write_text(content, encoding="utf-8")
     try:
         done = subprocess.run(
             probe.command,
@@ -26,7 +40,10 @@ def run_probe(probe: Probe) -> str | None:
             timeout=TIMEOUT_SECONDS,
         )
     finally:
-        target.unlink(missing_ok=True)
+        if original is None:
+            target.unlink(missing_ok=True)
+        else:
+            target.write_text(original, encoding="utf-8")  # always restore the real source
     output = done.stdout + done.stderr
     if done.returncode == 0:
         return "check PASSED with the violation present (guard is silent)"

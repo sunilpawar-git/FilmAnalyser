@@ -40,7 +40,12 @@ make sync    # locked environment (uv)
 make hooks   # pre-commit + Conventional Commits check
 make check   # the build: lint, mypy --strict, tests + coverage, security, wheel, guard self-test
 ```
-Requires `uv`, `make`, `gitleaks` (and `ffmpeg` from Phase 2).
+### Requirements
+- `uv`, `make`, `gitleaks`
+- **`ffmpeg` and `ffprobe` on `PATH`** (decoding and probing). Not a Python package, so install it
+  yourself: `brew install ffmpeg` (macOS) or `apt install ffmpeg` (Debian/Ubuntu). Developed and
+  tested on ffmpeg 9.0.2; CI pins 6.0.1 on Linux. Without it the integration tests fail
+  loudly and the tool exits with a clear "ffmpeg not found" message.
 
 ## Docs
 - `EXECUTION_PLAN.md`: phases, rules, enforcement

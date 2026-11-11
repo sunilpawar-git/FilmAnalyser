@@ -4,8 +4,9 @@
 UV ?= uv
 RUN := $(UV) run --locked
 AUDIT_REQS := .cache/audit-requirements.txt
-# Permissive licences only, plus MPL-2.0 (file-level copyleft, dev tooling only).
-LICENSE_ALLOW := MIT License;MIT;BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Python Software Foundation License;PSF-2.0;ISC License (ISCL);MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense)
+# Permissive licences only, plus MPL-2.0 (file-level copyleft, dev tooling only). The last entry
+# is numpy's exact compound expression: every part is permissive (DECISIONS #33).
+LICENSE_ALLOW := MIT License;MIT;BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Python Software Foundation License;PSF-2.0;ISC License (ISCL);MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0
 
 .PHONY: help sync hooks lint typecheck test security audit licenses secrets build guards check ci clean
 

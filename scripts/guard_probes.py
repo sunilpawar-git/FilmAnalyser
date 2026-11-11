@@ -16,6 +16,9 @@ class Probe:
     content: str
     command: list[str]
     expect: str  # must appear in the failing output, so a probe cannot "pass" for a wrong reason
+    # (old, new): mutate an EXISTING file instead of creating one (a "mutation probe"); the file
+    # is always restored. Proves the tests notice when a security measure is removed.
+    mutate: tuple[str, str] | None = None
 
 
 def _arch(test_file: str) -> list[str]:
@@ -69,7 +72,20 @@ def architecture_probes() -> list[Probe]:
 def security_probes() -> list[Probe]:
     sec = _arch("test_security_patterns.py")
     shell = "import subprocess\nsubprocess.run('ls', shell=True)\n"
+    inline = "import subprocess\nsubprocess.run(['ffmpeg', '-i', user_path])\n"
     return [
+        _probe(
+            "inline ffmpeg argv (option injection)",
+            "media",
+            inline,
+            _arch("test_subprocess_argv.py"),
+        ),
+        _probe(
+            "unknown error message key",
+            "core",
+            "raise InputError(key='error.zz.made_up')\n",
+            _arch("test_error_keys.py"),
+        ),
         _probe("shell=True in media", "media", shell, sec),
         _probe("pickle import", "media", "import pickle\n", sec),
         _probe("eval call", "core", "eval('1')\n", sec),
@@ -99,7 +115,47 @@ def quality_probes() -> list[Probe]:
 
 
 def source_probes() -> list[Probe]:
-    return [*architecture_probes(), *security_probes(), *quality_probes()]
+    return [*architecture_probes(), *security_probes(), *quality_probes(), *mutation_probes()]
+
+
+def _mutation(name: str, path: str, change: tuple[str, str], tests: str, expect: str) -> Probe:
+    command = [*PY, "pytest", "--no-cov", "-q", "-p", "no:cacheprovider", tests]
+    return Probe(name, path, "", command, expect, mutate=change)
+
+
+def mutation_probes() -> list[Probe]:
+    """Remove one security measure from the real code; the named test must then fail."""
+    base = "src/filmanalyser/media"
+    return [
+        _mutation(
+            "ffprobe path no longer after `--`",
+            f"{base}/probe.py",
+            ('"-of", "json", "--", str(path),', '"-of", "json", str(path),'),
+            "tests/unit/test_probe.py",
+            "test_argv_passes_the_path_last_after_double_dash",
+        ),
+        _mutation(
+            "ffmpeg input loses file: protocol lock",
+            f"{base}/ffmpeg_stream.py",
+            ('"-protocol_whitelist", "file", "-i", f"file:{path}",', '"-i", f"{path}",'),
+            "tests/unit/test_ffmpeg_stream.py",
+            "test_argv_is_a_list_with_a_file_protocol_input_and_no_audio",
+        ),
+        _mutation(
+            "path validation accepts directories",
+            f"{base}/paths.py",
+            ("if not path.is_file():", "if path.is_file() is None:"),
+            "tests/unit/test_paths.py",
+            "test_directory_is_rejected",
+        ),
+        _mutation(
+            "path validation accepts NUL bytes",
+            f"{base}/paths.py",
+            ('if not text.strip() or "\\x00" in text:', "if not text.strip():"),
+            "tests/unit/test_paths.py",
+            "test_empty_or_nul_paths_are_rejected",
+        ),
+    ]
 
 
 def _mutable_dataclass() -> str:

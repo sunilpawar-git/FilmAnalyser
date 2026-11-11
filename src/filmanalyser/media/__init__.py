@@ -1,1 +1,1 @@
-"""ffmpeg streaming and chunking (I/O shell)."""
+"""I/O shell around ffmpeg: path validation, probing, streaming decode, chunking, telemetry."""

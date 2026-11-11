@@ -36,3 +36,18 @@ def test_make_check_stage_order_is_fail_fast() -> None:
     line = next(ln for ln in MAKEFILE.splitlines() if ln.startswith("check:"))
     stages = line.split("##")[0].replace("check:", "").split()
     assert stages == ["lint", "typecheck", "test", "security", "build", "guards"]
+
+
+def test_ffmpeg_is_installed_on_both_oses() -> None:
+    assert re.search(r"brew install ffmpeg", WORKFLOW)  # macOS
+    assert re.search(r"FFMPEG_VERSION:\s*\"\d+\.\d+(\.\d+)?\"", WORKFLOW)  # Linux, pinned
+
+
+def test_linux_ffmpeg_download_is_checksum_verified_and_cached() -> None:
+    assert re.search(r"FFMPEG_LINUX_SHA256:\s*\"[0-9a-f]{64}\"", WORKFLOW)
+    assert "sha256sum -c" in WORKFLOW.split("Install ffmpeg (Linux")[1]
+    assert "actions/cache@" in WORKFLOW
+
+
+def test_ci_logs_the_ffmpeg_version() -> None:
+    assert "ffmpeg -version" in WORKFLOW

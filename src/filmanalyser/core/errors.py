@@ -2,45 +2,56 @@
 
 
 class FilmAnalyserError(Exception):
-    """Base class: unexpected or internal failures. Exit code 1."""
+    """Base class: unexpected or internal failures. Exit code 1.
+
+    User-facing text never lives in the exception: `key` names an entry in strings.toml (the
+    category default unless a specific key is given) and `fields` fill its `$placeholders`.
+    `detail` is optional developer diagnostics for logs. Fields must be basenames, never paths.
+    """
 
     exit_code = 1
-    message_key = "error.internal"
+    message_key = "error.internal.default"
+
+    def __init__(self, detail: str = "", *, key: str | None = None, **fields: str | int | float):
+        self.key = key or self.message_key
+        self.fields = fields
+        text = self.key + "".join(f" {name}={value}" for name, value in fields.items())
+        super().__init__(f"{text}: {detail}" if detail else text)
 
 
 class InputError(FilmAnalyserError):
     """The user supplied something invalid (path, option, configuration value)."""
 
     exit_code = 2
-    message_key = "error.input"
+    message_key = "error.input.default"
 
 
 class DecodeError(FilmAnalyserError):
     """The media could not be decoded."""
 
     exit_code = 3
-    message_key = "error.decode"
+    message_key = "error.decode.default"
 
 
 class ModelError(FilmAnalyserError):
     """A model file is missing, tampered with, or failed to run."""
 
     exit_code = 4
-    message_key = "error.model"
+    message_key = "error.model.default"
 
 
 class StorageError(FilmAnalyserError):
     """The feature store or resume manifest is unreadable, corrupt or mismatched."""
 
     exit_code = 5
-    message_key = "error.storage"
+    message_key = "error.storage.default"
 
 
 class AnalysisError(FilmAnalyserError):
     """Timeline analysis could not complete."""
 
     exit_code = 6
-    message_key = "error.analysis"
+    message_key = "error.analysis.default"
 
 
 class ResourceError(FilmAnalyserError):

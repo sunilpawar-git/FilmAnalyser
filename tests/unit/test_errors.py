@@ -44,3 +44,22 @@ def test_exit_codes_and_message_keys_are_unique() -> None:
 def test_error_carries_detail() -> None:
     with pytest.raises(InputError, match="bad path"):
         raise InputError("bad path")
+
+
+def test_error_defaults_to_its_category_key() -> None:
+    err = DecodeError()
+    assert err.key == DecodeError.message_key
+    assert err.fields == {}
+
+
+def test_error_carries_a_specific_key_and_fields_without_english_text() -> None:
+    err = InputError(key="error.input.not_found", name="film.mp4")
+    assert err.key == "error.input.not_found"
+    assert err.fields == {"name": "film.mp4"}
+    assert str(err) == "error.input.not_found name=film.mp4"
+    assert err.exit_code == 2  # the category still owns the exit code
+
+
+def test_detail_text_is_kept_next_to_the_key() -> None:
+    err = DecodeError("ffmpeg said no", key="error.decode.ffmpeg_failed", code=1)
+    assert str(err) == "error.decode.ffmpeg_failed code=1: ffmpeg said no"

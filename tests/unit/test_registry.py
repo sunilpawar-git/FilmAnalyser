@@ -2,11 +2,19 @@
 
 from collections.abc import Mapping
 from dataclasses import dataclass
+from typing import get_type_hints
 
+import numpy as np
 import pytest
 
+from filmanalyser.core.chunk import Chunk
 from filmanalyser.core.extractor import Extractor
 from filmanalyser.extractors.registry import REGISTRY, ExtractorRegistry
+
+
+def _chunk() -> Chunk:
+    frames = np.zeros((2, 2, 2, 3), dtype=np.uint8)
+    return Chunk(index=0, start_s=0.0, end_s=0.2, fps=10.0, frames=frames, context_frames=0)
 
 
 @dataclass(frozen=True)
@@ -14,8 +22,8 @@ class DummyExtractor:
     name: str = "dummy"
     version: int = 1
 
-    def extract(self, chunk: object) -> Mapping[str, float]:
-        return {"seen": 1.0}
+    def extract(self, chunk: Chunk) -> Mapping[str, float]:
+        return {"seen": float(len(chunk.core))}
 
 
 def test_dummy_satisfies_the_extractor_protocol() -> None:
@@ -27,7 +35,7 @@ def test_dummy_registers_and_is_retrievable() -> None:
     dummy = DummyExtractor()
     assert registry.register(dummy) is dummy
     assert registry.get("dummy") is dummy
-    assert registry.get("dummy").extract(object()) == {"seen": 1.0}
+    assert registry.get("dummy").extract(_chunk()) == {"seen": 2.0}
 
 
 def test_registration_order_is_preserved() -> None:
@@ -71,3 +79,9 @@ def test_registries_are_independent() -> None:
 
 def test_default_registry_starts_empty() -> None:
     assert REGISTRY.names() == ()
+
+
+def test_protocol_contract_takes_a_chunk() -> None:
+    """DECISIONS #25: the Phase 1 `object` placeholder is narrowed to Chunk."""
+    hints = get_type_hints(Extractor.extract)
+    assert hints["chunk"] is Chunk

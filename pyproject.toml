@@ -9,7 +9,9 @@ description = "A local craft analyser: turns an mp4 film into a timestamped craf
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
-dependencies = []
+dependencies = [
+    "numpy>=2.4.6",
+]
 
 [dependency-groups]
 dev = [
@@ -51,6 +53,9 @@ max-statements = 40
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101", "S603", "S607", "PLR0913"]
 "scripts/**" = ["S603", "S607"]
+# Argument-list subprocess is the mandated safe form, confined to media/ (DECISIONS #24);
+# every call must take its command from a `*_argv` builder (tests/architecture/test_subprocess_argv.py).
+"src/filmanalyser/media/**" = ["S603"]
 
 # ---------------------------------------------------------------- mypy
 [tool.mypy]
