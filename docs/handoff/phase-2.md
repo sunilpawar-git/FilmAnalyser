@@ -32,7 +32,7 @@ all three are listed in "Final phase: Pending items" in `EXECUTION_PLAN.md`.
 | 11 | DECISIONS #38 was first drafted claiming exact CI pinning on both OSes | Corrected before commit to say what is actually built; the gap is tracked as P2-2 |
 
 ### Unresolvable in Phase 2 (fail-loud; consolidated in `EXECUTION_PLAN.md`, "Final phase: Pending items")
-- **P2-1** The CI ffmpeg steps have never run on GitHub. Pushing is outward-facing and was not approved. The Linux job uses ffmpeg 6.0.1; all local runs used 9.0.2.
+- **P2-1** (closed after the push, see the plan) The CI ffmpeg steps have never run on GitHub. Pushing is outward-facing and was not approved. The Linux job uses ffmpeg 6.0.1; all local runs used 9.0.2.
 - **P2-2** macOS CI ffmpeg (Homebrew) is not exactly pinned; only a floor (major >= 6) is enforced and the version is logged.
 - **P1-2** (inherited) Branch protection on `main` is not applied. P1-1 was closed after Phase 1 (repo and green CI exist).
 

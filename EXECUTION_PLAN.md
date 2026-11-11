@@ -65,7 +65,7 @@ Then pause for your approval.
 - **Exit criteria:** `make check` green locally and in CI; deliberately violating each rule (temp file) makes the build fail, proving the guards work.
 
 ## Phase 2: Core contracts and streaming decoder
-**Status: built and green locally; NOT closed. Two items (P2-1, P2-2) are open and tracked in "Final phase: Pending items" at the end of this file. Handoff: `docs/handoff/phase-2.md`.**
+**Status: built and green locally; NOT closed. One item (P2-2) is open and tracked in "Final phase: Pending items" at the end of this file. Handoff: `docs/handoff/phase-2.md`.**
 
 **Goal:** Stream any mp4 in overlapping chunks with flat memory.
 - **Tests first:**
@@ -176,7 +176,7 @@ Anything unfinished in an earlier phase is consolidated here. A phase listed bel
 |---|------|--------------|-------------------|-----------------|
 | P1-1 | Phase 1 | ~~CI has never run~~ **DONE 2026-11-11:** repo created at github.com/sunilpawar-git/FilmAnalyser (private); `ci` green on macos-latest (30s) and ubuntu-latest | | |
 | P1-2 | Phase 1 | **Branch protection on `main` is not applied** (instructions are written) | Needs the remote from P1-1, and a GitHub plan that supports protection on private repos | `docs/BRANCH_PROTECTION.md` steps 3-4, then verify a direct push is rejected |
-| P2-1 | Phase 2 | **The new ffmpeg install steps in `ci.yml` have never run on GitHub** (Linux pinned static build + cache, macOS Homebrew). Locally they are only structurally tested and the YAML parses; Linux runs a different ffmpeg (6.0.1) than the 9.0.2 used in development | Verifying needs a push to the remote, an outward-facing action that has not been approved | With approval: push `main` and the `phase-2` tag, watch `ci` on both OSes, fix whatever differs (the Linux 6.0.1 build is the likeliest source) |
+| P2-1 | Phase 2 | ~~ffmpeg CI steps never ran on GitHub~~ **DONE 2026-11-11:** `ci` green on macos-latest (ffmpeg 9.0.2, Homebrew) and ubuntu-latest (ffmpeg 6.0.1 static, checksum-verified, cached). The first run exposed a flawed flatness test (macOS allocator warms up slowly); fixed, DECISIONS #39 | | |
 | P2-2 | Phase 2 | **ffmpeg on macOS CI is not exactly pinned** (Homebrew installs whatever the formula currently ships; only a floor, major >= 6, is enforced and the exact version is logged) | Homebrew has no version pinning and no trustworthy versioned macOS static build exists | Decide: accept the floor + logged version, or vendor a checksummed macOS binary; record the choice in `DECISIONS.md` |
 
-Phase 1 is complete only when P1-2 is also done. Phase 2 is complete only when P2-1 and P2-2 are done.
+Phase 1 is complete only when P1-2 is also done. Phase 2 is complete only when P2-2 is done.
