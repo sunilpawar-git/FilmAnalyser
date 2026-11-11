@@ -42,6 +42,10 @@ all three are listed in "Final phase: Pending items" in `EXECUTION_PLAN.md`.
 - `prd.md` (empty, pre-existing) is untracked and untouched.
 
 ## RSS flatness (measured)
+**Correction after the first CI run:** macOS CI plateaued far slower than the laptop (12 chunks: 66-70 MB;
+120 chunks: 89 MB, flat from chunk 64 at 89.3 to chunk 120 at 89.4), so the original "10x vs 1x" comparison
+failed on warm-up, not growth. The test now asserts the peak stops rising after chunk 64 (DECISIONS #39).
+The numbers below are the original local measurements.
 Test (`tests/integration/test_memory_flat.py`, 10 s chunks, each film in its own process):
 12 chunks to 46.7 MB, 120 chunks (10x longer) to 47.5 MB. Budget: 10 % + 8 MB.
 
