@@ -56,7 +56,7 @@ Then pause for your approval.
 ---
 
 ## Phase 1: Foundation and guardrails
-**Status: built and green locally; NOT closed. Two items need a GitHub remote and are tracked in "Final phase: Pending items" at the end of this file. Handoff: `docs/handoff/phase-1.md`.**
+**Status: built and green locally; NOT closed. One item (P1-2, branch protection) is still open and tracked in "Final phase: Pending items" at the end of this file. Handoff: `docs/handoff/phase-1.md`.**
 
 **Goal:** An empty but fully green project with every rule automated.
 - **Tests first:** the architecture tests (file size, layer imports, hex/string literal bans, banned security patterns) are written first and run against a skeleton.
@@ -172,7 +172,7 @@ Anything unfinished in an earlier phase is consolidated here. A phase listed bel
 
 | # | From | Pending item | Why it is pending | How to close it |
 |---|------|--------------|-------------------|-----------------|
-| P1-1 | Phase 1 | **CI has never run.** `.github/workflows/ci.yml` is written and structurally tested, but the exit criterion "`make check` green ... in CI" is unverified | The repository has no GitHub remote yet; creating one is an outward-facing action that needs your approval | Follow `docs/BRANCH_PROTECTION.md` steps 1-2; confirm `ci` is green on macos-latest and ubuntu-latest; fix anything that differs from local |
+| P1-1 | Phase 1 | ~~CI has never run~~ **DONE 2026-11-11:** repo created at github.com/sunilpawar-git/FilmAnalyser (private); `ci` green on macos-latest (30s) and ubuntu-latest | | |
 | P1-2 | Phase 1 | **Branch protection on `main` is not applied** (instructions are written) | Needs the remote from P1-1, and a GitHub plan that supports protection on private repos | `docs/BRANCH_PROTECTION.md` steps 3-4, then verify a direct push is rejected |
 
-Phase 1 is complete only when P1-1 and P1-2 are ticked.
+Phase 1 is complete only when P1-2 is also done.
