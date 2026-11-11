@@ -131,3 +131,26 @@ def test_decoding_logs_structured_events_without_paths(
     assert {e["film"] for e in events if "film" in e} == {"two_min.mp4"}  # basename only
     assert events[-1] == {"event": "decode_done", "film": "two_min.mp4", "chunks": 12}
     assert str(two_minutes.parent) not in caplog.text
+
+
+def test_resuming_at_a_chunk_reproduces_that_chunk_without_decoding_the_earlier_ones(
+    two_minutes: Path, caplog: pytest.LogCaptureFixture
+) -> None:
+    full = list(decode_chunks(two_minutes, CONFIG))
+    with caplog.at_level(logging.INFO, logger="filmanalyser"):
+        resumed = list(decode_chunks(two_minutes, CONFIG, start_chunk=7))
+    assert [c.index for c in resumed] == [7, 8, 9, 10, 11]
+    for got, want in zip(resumed, full[7:], strict=True):
+        assert (got.start_s, got.end_s, got.context_frames) == (
+            want.start_s,
+            want.end_s,
+            want.context_frames,
+        )
+        assert np.array_equal(got.frames, want.frames)  # bit-identical, so features are too
+    decoded = sum(json.loads(r.getMessage()).get("frames", 0) for r in caplog.records)
+    assert decoded == sum(len(c.frames) for c in full[7:])  # nothing before chunk 7's context
+
+
+def test_resuming_past_the_end_of_the_film_is_a_decode_error(two_minutes: Path) -> None:
+    with pytest.raises(DecodeError):
+        list(decode_chunks(two_minutes, CONFIG, start_chunk=40))

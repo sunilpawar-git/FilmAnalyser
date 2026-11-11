@@ -120,3 +120,31 @@ def test_property_only_the_last_chunk_may_be_short(total: int, per_chunk: int) -
     assert all(s == per_chunk for s in sizes[:-1])
     assert 1 <= sizes[-1] <= per_chunk
     assert sum(sizes) == total
+
+
+def _stream_from(start: int, total: int) -> Iterator[np.ndarray]:
+    for frame in _stream(total):
+        if _index(frame) >= start:
+            yield frame
+
+
+@pytest.mark.parametrize("first", [1, 2, 3])
+def test_a_resumed_stream_reproduces_the_later_chunks_exactly(first: int) -> None:
+    """The stream a resumed run decodes starts at the context of chunk `first`, not at frame 0."""
+    config = Config(chunk_seconds=10.0, overlap_seconds=1.0, analysis_fps=10.0)
+    full = list(chunk_frames(_stream(380), config, SHAPE))
+    start = first * 100 - 10
+    resumed = list(chunk_frames(_stream_from(start, 380), config, SHAPE, first_index=first))
+    assert [c.index for c in resumed] == [c.index for c in full[first:]]
+    for got, want in zip(resumed, full[first:], strict=True):
+        assert (got.start_s, got.end_s, got.context_frames) == (
+            want.start_s,
+            want.end_s,
+            want.context_frames,
+        )
+        assert _ids(got.frames) == _ids(want.frames)
+
+
+def test_a_resumed_stream_that_ends_inside_the_context_yields_nothing() -> None:
+    config = Config(chunk_seconds=10.0, overlap_seconds=1.0, analysis_fps=10.0)
+    assert list(chunk_frames(_stream_from(190, 195), config, SHAPE, first_index=2)) == []

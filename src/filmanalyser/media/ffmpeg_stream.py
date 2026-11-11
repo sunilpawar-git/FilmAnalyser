@@ -19,28 +19,33 @@ from typing import IO, cast
 
 import numpy as np
 
-from filmanalyser.core.chunk import Chunk, Frames
+from filmanalyser.core.chunk import Chunk, Frames, span_for
 from filmanalyser.core.config import STDERR_LIMIT_BYTES, Config
 from filmanalyser.core.errors import DecodeError
+from filmanalyser.core.events import log_event
 from filmanalyser.media.chunker import chunk_frames
 from filmanalyser.media.paths import find_tool, scrub_stderr, validate_input_path
 from filmanalyser.media.probe import probe_video
-from filmanalyser.media.telemetry import log_event, peak_rss_mb
+from filmanalyser.media.telemetry import peak_rss_mb
 
 _DRAIN_READ = 4096
 _JOIN_SECONDS = 5.0
 
 
-def decode_argv(ffmpeg: str, path: Path, config: Config, size: tuple[int, int]) -> list[str]:
+def decode_argv(
+    ffmpeg: str, path: Path, config: Config, size: tuple[int, int], start_s: float = 0.0
+) -> list[str]:
     """The one place the ffmpeg command line is built. `-i` takes the next argument as its value
     (ffmpeg has no `--` for inputs: after it every argument is an output name), so the path is
-    made safe instead: absolute, `file:`-prefixed, protocols whitelisted."""
+    made safe instead: absolute, `file:`-prefixed, protocols whitelisted. A resumed run seeks (input
+    seeking, before `-i`) so the film before `start_s` is never decoded."""
     width, height = size
+    seek = ["-ss", str(start_s)] if start_s > 0 else []
     video_filter = (
         f"setpts=PTS-STARTPTS,fps={config.analysis_fps},scale={width}:{height}:flags=area"
     )
     return [
-        ffmpeg, "-nostdin", "-v", "error",
+        ffmpeg, "-nostdin", "-v", "error", *seek,
         "-protocol_whitelist", "file", "-i", f"file:{path}",
         "-map", "0:v:0", "-an", "-sn", "-dn",
         "-vf", video_filter,
@@ -71,9 +76,11 @@ class _StderrTail:
         return scrub_stderr(self._tail, path, self._limit)
 
 
-def stream_frames(path: Path, config: Config, size: tuple[int, int]) -> Generator[Frames]:
-    """Yield decoded frames, shape (height, width, 3), until the film ends."""
-    argv = decode_argv(find_tool("ffmpeg"), path, config, size)
+def stream_frames(
+    path: Path, config: Config, size: tuple[int, int], start_s: float = 0.0
+) -> Generator[Frames]:
+    """Yield decoded frames, shape (height, width, 3), from `start_s` until the film ends."""
+    argv = decode_argv(find_tool("ffmpeg"), path, config, size, start_s)
     width, height = size
     frame_bytes = width * height * 3
     with subprocess.Popen(
@@ -120,13 +127,21 @@ def _timed(chunks: Iterator[Chunk], film: str) -> Iterator[Chunk]:
     log_event("decode_done", film=film, chunks=total)
 
 
-def decode_chunks(raw_path: str | os.PathLike[str], config: Config) -> Iterator[Chunk]:
-    """Validate, probe and stream a film as overlapping chunks (the Phase 2 entry point)."""
+def decode_chunks(
+    raw_path: str | os.PathLike[str], config: Config, start_chunk: int = 0
+) -> Iterator[Chunk]:
+    """Validate, probe and stream a film as overlapping chunks (the Phase 2 entry point).
+
+    `start_chunk` resumes a run: chunks before it are not decoded (only the overlap that chunk
+    needs as context is), and the chunks that follow are identical to an uninterrupted run's."""
     path = validate_input_path(raw_path)
     info = probe_video(path)
     size = info.scaled_size(config.frame_width)
+    span = span_for(start_chunk, config.frames_per_chunk, config.overlap_frames)
     log_event(
-        "decode_start", film=path.name, width=size[0], height=size[1], fps=config.analysis_fps
-    )
-    chunks = chunk_frames(stream_frames(path, config, size), config, (size[1], size[0]))
+        "decode_start", film=path.name, width=size[0], height=size[1], fps=config.analysis_fps,
+        start_chunk=start_chunk,
+    )  # fmt: skip
+    frames = stream_frames(path, config, size, span.context_start / config.analysis_fps)
+    chunks = chunk_frames(frames, config, (size[1], size[0]), start_chunk)
     yield from _timed(chunks, path.name)
