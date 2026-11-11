@@ -56,7 +56,7 @@ Then pause for your approval.
 ---
 
 ## Phase 1: Foundation and guardrails
-**Status: built and green locally; NOT closed. One item (P1-2, branch protection) is still open and tracked in "Final phase: Pending items" at the end of this file. Handoff: `docs/handoff/phase-1.md`.**
+**Status: complete. P1-1 and P1-2 closed. Handoff: `docs/handoff/phase-1.md`.**
 
 **Goal:** An empty but fully green project with every rule automated.
 - **Tests first:** the architecture tests (file size, layer imports, hex/string literal bans, banned security patterns) are written first and run against a skeleton.
@@ -175,8 +175,8 @@ Anything unfinished in an earlier phase is consolidated here. A phase listed bel
 | # | From | Pending item | Why it is pending | How to close it |
 |---|------|--------------|-------------------|-----------------|
 | P1-1 | Phase 1 | ~~CI has never run~~ **DONE 2026-11-11:** repo created at github.com/sunilpawar-git/FilmAnalyser (private); `ci` green on macos-latest (30s) and ubuntu-latest | | |
-| P1-2 | Phase 1 | **Branch protection on `main` is not applied** (instructions are written) | **Attempted 2026-11-11: GitHub returned 403 "Upgrade to GitHub Pro or make this repository public".** The repo is private on a plan without protection | `docs/BRANCH_PROTECTION.md` steps 3-4, then verify a direct push is rejected |
+| P1-2 | Phase 1 | ~~Branch protection on `main` not applied~~ **DONE 2026-11-11:** the repo was made public (private-repo protection needs Pro); `main` now requires `make check (macos-latest)` and `make check (ubuntu-latest)` (strict), enforces for admins, linear history, no force-push or deletion. A direct push was rejected (`protected branch hook declined`) | | |
 | P2-1 | Phase 2 | ~~ffmpeg CI steps never ran on GitHub~~ **DONE 2026-11-11:** `ci` green on macos-latest (ffmpeg 9.0.2, Homebrew) and ubuntu-latest (ffmpeg 6.0.1 static, checksum-verified, cached). The first run exposed a flawed flatness test (macOS allocator warms up slowly); fixed, DECISIONS #39 | | |
 | P2-2 | Phase 2 | ~~macOS CI ffmpeg not exactly pinned~~ **DONE 2026-11-11:** pinned static 9.0.2 build, vendor-published sha256 verified, cached (DECISIONS #40); CI run green, logs `ffmpeg version 9.0.2` | | |
 
-Phase 1 is complete only when P1-2 is also done. Phase 2's own items are all done; it is complete.
+No items are pending. Phases 1 and 2 are complete.
