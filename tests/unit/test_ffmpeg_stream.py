@@ -38,6 +38,14 @@ def test_argv_is_a_list_with_a_file_protocol_input_and_no_audio() -> None:
     assert "-nostdin" in argv
 
 
+def test_argv_seeks_before_the_input_only_when_resuming() -> None:
+    plain = decode_argv("ffmpeg", Path("/f.mp4"), CONFIG, SIZE)
+    assert "-ss" not in plain
+    argv = decode_argv("ffmpeg", Path("/f.mp4"), CONFIG, SIZE, start_s=118.0)
+    assert argv[argv.index("-ss") + 1] == "118.0"
+    assert argv.index("-ss") < argv.index("-i")  # input seeking: skipped film is never decoded
+
+
 def test_argv_applies_pts_normalisation_fps_and_scale() -> None:
     argv = decode_argv("ffmpeg", Path("/f.mp4"), CONFIG, SIZE)
     vf = argv[argv.index("-vf") + 1]

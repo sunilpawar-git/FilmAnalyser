@@ -10,6 +10,14 @@ STDERR_LIMIT_BYTES = 4096  # tool diagnostics kept; anything older is dropped
 PROBE_TIMEOUT_S = 30.0  # ffprobe must answer within this
 PROBE_MAX_OUTPUT_BYTES = 1024 * 1024  # a probe answer is a few hundred bytes; more is wrong
 
+# Feature store bounds (SSOT; consumed by storage/). A chunk file holds one row of a few dozen
+# numbers and a manifest a hash per chunk, so anything this large is damaged or hostile.
+STORE_MAX_FILE_BYTES = 4 * 1024 * 1024
+HASH_BLOCK_BYTES = 1024 * 1024  # the input film is hashed in blocks this big, never loaded whole
+
+# The settings that decide what a chunk contains: part of the key a stored run is cached by.
+GEOMETRY_FIELDS = ("chunk_seconds", "overlap_seconds", "analysis_fps", "frame_width")
+
 _POSITIVE = ("chunk_seconds", "ram_budget_mb", "analysis_fps", "frame_width")
 
 
@@ -33,6 +41,10 @@ class Config:
             raise _invalid("chunk_seconds")  # a chunk must hold at least one frame
         if self.frame_width % 2:
             raise _invalid("frame_width")  # video scaling needs even dimensions
+
+    def geometry(self) -> dict[str, float]:
+        """The `GEOMETRY_FIELDS` and their values: what stored features were computed under."""
+        return {name: getattr(self, name) for name in GEOMETRY_FIELDS}
 
     @property
     def frames_per_chunk(self) -> int:

@@ -6,7 +6,8 @@ import logging
 import numpy as np
 import pytest
 
-from filmanalyser.media.telemetry import format_event, log_event, peak_rss_mb
+from filmanalyser.core.events import format_event, log_event
+from filmanalyser.media.telemetry import peak_rss_mb
 
 
 def test_event_is_one_json_object() -> None:

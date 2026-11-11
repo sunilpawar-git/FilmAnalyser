@@ -35,6 +35,17 @@ default = "A model file is missing or failed its integrity check."
 
 [error.storage]
 default = "The feature store is unreadable or incompatible."
+bad_directory = "'$name' cannot be used as part of the output location (it must be a plain folder or file name, not a link, traversal or other kind of file)."
+write_failed = "'$name' could not be written; check the free space and permissions."
+bad_schema = "The feature schema is invalid: '$name'."
+bad_features = "'$name' does not match the feature schema, so nothing was stored."
+out_of_order = "Chunk $got cannot be stored: chunk $expected is next (results are append-only)."
+already_complete = "The results in '$name' are already complete."
+manifest_corrupt = "The progress record '$name' is damaged. Delete the output folder to start over."
+chunk_corrupt = "The stored features file '$name' is missing or damaged. Delete the output folder to start over."
+input_mismatch = "The results in '$name' were made from a different film. Use another output folder."
+features_mismatch = "The results in '$name' were made with different extractor versions. Use another output folder."
+settings_mismatch = "The results in '$name' were made with different chunk settings. Use another output folder."
 
 [error.analysis]
 default = "The analysis could not be completed."

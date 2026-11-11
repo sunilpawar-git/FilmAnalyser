@@ -27,9 +27,13 @@ mp4 --ffmpeg pipe--> 60s chunk --> extractors --> append to Parquet --> discard 
 - Memory depends on chunk size, not film length.
 - Extractors share one interface: `extract(chunk) -> dict`.
 - Features are versioned; re-analysis never requires re-decoding.
+- Storage: an output directory holds `manifest.json` and one Parquet file per chunk, written atomically.
+  The manifest records the finished chunks, keyed by the film's hash, the feature version and the chunk
+  settings. A run killed mid-film resumes at the first unfinished chunk without decoding the finished
+  ones; results from different inputs, extractor versions or settings are rejected, never mixed.
 
 ## Stack
-Python 3.11+, ffmpeg, OpenCV, librosa, ONNX Runtime, NumPy/pandas, `ruptures`, Parquet. FastAPI + web UI + Tauri packaging are post-MVP.
+Python 3.11+, ffmpeg, OpenCV, librosa, ONNX Runtime, NumPy/pandas, `ruptures`, Parquet (`pyarrow`). FastAPI + web UI + Tauri packaging are post-MVP.
 
 ## MVP metrics
 Shot cuts and average shot length, cut-rate curve, colour palette and brightness, loudness profile, speech/music/silence ratio, tension curve, act-break detection, flagged timestamps.

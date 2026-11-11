@@ -66,6 +66,12 @@ def architecture_probes() -> list[Probe]:
         _probe(
             "function over 40 lines", "core", _long_function(), _arch("test_function_limits.py")
         ),
+        _probe(
+            "direct file write in storage (not atomic)",
+            "storage",
+            "def f(p):\n    p.write_bytes(b'x')\n",
+            _arch("test_atomic_writes.py"),
+        ),
     ]
 
 
@@ -125,6 +131,10 @@ def _mutation(name: str, path: str, change: tuple[str, str], tests: str, expect:
 
 def mutation_probes() -> list[Probe]:
     """Remove one security measure from the real code; the named test must then fail."""
+    return [*media_mutations(), *file_safety_mutations(), *store_mutations()]
+
+
+def media_mutations() -> list[Probe]:
     base = "src/filmanalyser/media"
     return [
         _mutation(
@@ -154,6 +164,77 @@ def mutation_probes() -> list[Probe]:
             ('if not text.strip() or "\\x00" in text:', "if not text.strip():"),
             "tests/unit/test_paths.py",
             "test_empty_or_nul_paths_are_rejected",
+        ),
+        _mutation(
+            "resume no longer seeks (re-decodes finished chunks)",
+            f"{base}/ffmpeg_stream.py",
+            ('seek = ["-ss", str(start_s)] if start_s > 0 else []', "seek: list[str] = []"),
+            "tests/unit/test_ffmpeg_stream.py",
+            "test_argv_seeks_before_the_input_only_when_resuming",
+        ),
+    ]
+
+
+def file_safety_mutations() -> list[Probe]:
+    base, unit = "src/filmanalyser/storage", "tests/unit"
+    return [
+        _mutation(
+            "atomic write loses its rename",
+            f"{base}/files.py",
+            ("os.replace(tmp_name, target)", "target.write_bytes(data)"),
+            f"{unit}/test_files.py",
+            "test_a_failed_write_keeps_the_old_file_and_leaves_no_temp_file",
+        ),
+        _mutation(
+            "store accepts a symlink in place of a file",
+            f"{base}/files.py",
+            ("if path.is_symlink():", "if path.is_symlink() is None:"),
+            f"{unit}/test_files.py",
+            "test_a_symlink_in_place_of_a_file_is_refused",
+        ),
+        _mutation(
+            "store accepts a path with directories (traversal)",
+            f"{base}/files.py",
+            ("name != _base(name) or ", ""),
+            f"{unit}/test_files.py",
+            "test_names_must_be_plain",
+        ),
+        _mutation(
+            "file reads are no longer size-bounded",
+            f"{base}/files.py",
+            ("if len(data) > limit:", "if len(data) > limit * 1000:"),
+            f"{unit}/test_files.py",
+            "test_oversized_files_are_refused_not_loaded",
+        ),
+    ]
+
+
+def store_mutations() -> list[Probe]:
+    base, unit = "src/filmanalyser/storage", "tests/unit"
+    return [
+        _mutation(
+            "feature version mismatch is accepted (mixed outputs)",
+            f"{base}/manifest.py",
+            (
+                "if self.key.feature_version != key.feature_version:",
+                "if self.key.feature_version is None:",
+            ),
+            f"{unit}/test_feature_store.py",
+            "test_a_changed_extractor_version_is_rejected_never_mixed",
+        ),
+        _mutation(
+            "chunk hash is no longer verified",
+            f"{base}/feature_store.py",
+            ("if sha256_bytes(data) != self._manifest.chunks[index]:", "if data is None:"),
+            f"{unit}/test_feature_store.py",
+            "test_a_damaged_chunk_file_is_a_storage_error_on_open",
+        ),
+        _mutation(
+            "store accepts out-of-order or repeated chunks (not append-only)",
+            f"{base}/feature_store.py",
+            ("if index != self.next_chunk:", "if index < 0:"),
+            f"{unit}/test_feature_store.py",
+            "test_writes_are_append_only_and_in_order",
         ),
     ]
 
