@@ -1,7 +1,7 @@
 # Branch protection for `main`
 
 Protection is a GitHub-side setting, so it can only be applied once the repository exists on
-GitHub. Nothing here has been run yet (see "Final phase: Pending items" in `EXECUTION_PLAN.md`).
+GitHub. Applied on 2026-11-11 (DECISIONS #41); the repo had to be made public for it.
 
 ## 1. Create the remote and push (private; films and data never go here)
 ```sh

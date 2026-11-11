@@ -1,7 +1,6 @@
 # Phase 1 handoff: Foundation and guardrails
 
-**Status: built and green locally. NOT closed:** two items need a GitHub remote (P1-1, P1-2, listed
-in "Final phase: Pending items" in `EXECUTION_PLAN.md`).
+**Status: complete.** P1-1 and P1-2 were closed after the handoff (CI green; branch protection applied, DECISIONS #41).
 
 ## 1. Tech debt incurred, and 2. exact steps taken to resolve each item now
 
