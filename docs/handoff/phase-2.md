@@ -1,7 +1,7 @@
 # Phase 2 handoff: Core contracts and streaming decoder
 
-**Status: built and green locally. NOT closed.** P2-1 and P2-2 (and the inherited P1-2) are open;
-all three are listed in "Final phase: Pending items" in `EXECUTION_PLAN.md`.
+**Status: complete.** P2-1 and P2-2 were closed after the push (CI green on both OSes; macOS ffmpeg now
+pinned, DECISIONS #40). Only the inherited P1-2 (branch protection) is open, in `EXECUTION_PLAN.md`.
 
 ## What was built
 - `core/chunk.py`: `Chunk` (frozen, read-only frames, core window + leading overlap), `ChunkSpan`,
@@ -33,7 +33,7 @@ all three are listed in "Final phase: Pending items" in `EXECUTION_PLAN.md`.
 
 ### Unresolvable in Phase 2 (fail-loud; consolidated in `EXECUTION_PLAN.md`, "Final phase: Pending items")
 - **P2-1** (closed after the push, see the plan) The CI ffmpeg steps have never run on GitHub. Pushing is outward-facing and was not approved. The Linux job uses ffmpeg 6.0.1; all local runs used 9.0.2.
-- **P2-2** macOS CI ffmpeg (Homebrew) is not exactly pinned; only a floor (major >= 6) is enforced and the version is logged.
+- **P2-2** (closed, DECISIONS #40) macOS CI ffmpeg (Homebrew) is not exactly pinned; only a floor (major >= 6) is enforced and the version is logged.
 - **P1-2** (inherited) Branch protection on `main` is not applied. P1-1 was closed after Phase 1 (repo and green CI exist).
 
 ### Notes (not debt)

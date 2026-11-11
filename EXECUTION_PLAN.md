@@ -65,7 +65,7 @@ Then pause for your approval.
 - **Exit criteria:** `make check` green locally and in CI; deliberately violating each rule (temp file) makes the build fail, proving the guards work.
 
 ## Phase 2: Core contracts and streaming decoder
-**Status: built and green locally; NOT closed. One item (P2-2) is open and tracked in "Final phase: Pending items" at the end of this file. Handoff: `docs/handoff/phase-2.md`.**
+**Status: complete. CI green on macOS and Linux; P2-1 and P2-2 closed. Handoff: `docs/handoff/phase-2.md`.**
 
 **Goal:** Stream any mp4 in overlapping chunks with flat memory.
 - **Tests first:**
@@ -175,8 +175,8 @@ Anything unfinished in an earlier phase is consolidated here. A phase listed bel
 | # | From | Pending item | Why it is pending | How to close it |
 |---|------|--------------|-------------------|-----------------|
 | P1-1 | Phase 1 | ~~CI has never run~~ **DONE 2026-11-11:** repo created at github.com/sunilpawar-git/FilmAnalyser (private); `ci` green on macos-latest (30s) and ubuntu-latest | | |
-| P1-2 | Phase 1 | **Branch protection on `main` is not applied** (instructions are written) | Needs the remote from P1-1, and a GitHub plan that supports protection on private repos | `docs/BRANCH_PROTECTION.md` steps 3-4, then verify a direct push is rejected |
+| P1-2 | Phase 1 | **Branch protection on `main` is not applied** (instructions are written) | **Attempted 2026-11-11: GitHub returned 403 "Upgrade to GitHub Pro or make this repository public".** The repo is private on a plan without protection | `docs/BRANCH_PROTECTION.md` steps 3-4, then verify a direct push is rejected |
 | P2-1 | Phase 2 | ~~ffmpeg CI steps never ran on GitHub~~ **DONE 2026-11-11:** `ci` green on macos-latest (ffmpeg 9.0.2, Homebrew) and ubuntu-latest (ffmpeg 6.0.1 static, checksum-verified, cached). The first run exposed a flawed flatness test (macOS allocator warms up slowly); fixed, DECISIONS #39 | | |
-| P2-2 | Phase 2 | **ffmpeg on macOS CI is not exactly pinned** (Homebrew installs whatever the formula currently ships; only a floor, major >= 6, is enforced and the exact version is logged) | Homebrew has no version pinning and no trustworthy versioned macOS static build exists | Decide: accept the floor + logged version, or vendor a checksummed macOS binary; record the choice in `DECISIONS.md` |
+| P2-2 | Phase 2 | ~~macOS CI ffmpeg not exactly pinned~~ **DONE 2026-11-11:** pinned static 9.0.2 build, vendor-published sha256 verified, cached (DECISIONS #40); CI run green, logs `ffmpeg version 9.0.2` | | |
 
-Phase 1 is complete only when P1-2 is also done. Phase 2 is complete only when P2-2 is done.
+Phase 1 is complete only when P1-2 is also done. Phase 2's own items are all done; it is complete.
