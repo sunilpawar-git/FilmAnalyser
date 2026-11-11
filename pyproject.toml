@@ -1,0 +1,86 @@
+[build-system]
+requires = ["hatchling==1.27.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "filmanalyser"
+version = "0.1.0"
+description = "A local craft analyser: turns an mp4 film into a timestamped craft-analysis report."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "bandit>=1.8",
+    "commitizen>=4.0",
+    "hypothesis>=6.120",
+    "mypy>=1.14",
+    "pip-audit>=2.8",
+    "pip-licenses>=5.0",
+    "pre-commit>=4.0",
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "ruff>=0.9",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/filmanalyser"]
+
+# ---------------------------------------------------------------- ruff
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+# C901 = cyclomatic complexity, PLR09xx = too many args/branches/statements,
+# S = flake8-bandit (second security layer next to bandit itself).
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "C4", "RET", "PL", "S", "C90"]
+ignore = ["PLR2004"]  # magic-value comparisons: too noisy, covered by review
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-args = 5
+max-branches = 10
+max-statements = 40
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101", "S603", "S607", "PLR0913"]
+"scripts/**" = ["S603", "S607"]
+
+# ---------------------------------------------------------------- mypy
+[tool.mypy]
+strict = true
+python_version = "3.11"
+files = ["src", "tests", "scripts"]
+warn_unreachable = true
+
+# ---------------------------------------------------------------- pytest
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers --strict-config --cov=filmanalyser --cov-branch --cov-fail-under=90 --cov-report=term-missing:skip-covered"
+xfail_strict = true
+filterwarnings = ["error"]
+
+[tool.coverage.report]
+exclude_also = ["if __name__ == .__main__.:"]
+
+# ---------------------------------------------------------------- bandit
+[tool.bandit]
+exclude_dirs = ["tests", ".venv"]
+# B404/B603 only note that argument-list subprocess exists. That is the mandated safe form
+# (DECISIONS #24); tests/architecture confines it to media/ and scripts/. Shell variants
+# (B602, B604, B605, B606) stay enabled. Inline `# nosec` is banned by the guards.
+skips = ["B404", "B603"]
+
+# ---------------------------------------------------------------- commits
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "pep621"
+tag_format = "v$version"
+update_changelog_on_bump = true

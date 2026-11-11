@@ -34,7 +34,18 @@ Python 3.11+, ffmpeg, OpenCV, librosa, ONNX Runtime, NumPy/pandas, `ruptures`, P
 ## MVP metrics
 Shot cuts and average shot length, cut-rate curve, colour palette and brightness, loudness profile, speech/music/silence ratio, tension curve, act-break detection, flagged timestamps.
 
+## Development
+```sh
+make sync    # locked environment (uv)
+make hooks   # pre-commit + Conventional Commits check
+make check   # the build: lint, mypy --strict, tests + coverage, security, wheel, guard self-test
+```
+Requires `uv`, `make`, `gitleaks` (and `ffmpeg` from Phase 2).
+
 ## Docs
+- `EXECUTION_PLAN.md`: phases, rules, enforcement
+- `docs/handoff/`: per-phase handoff notes
+- `docs/BRANCH_PROTECTION.md`: GitHub setup for `main`
 - `ACCEPTANCE.md`: what "done" means
 - `DECISIONS.md`: log of choices
 - `BACKLOG.md`: ideas parked outside the current scope

@@ -1,0 +1,17 @@
+# All user-facing text (report and CLI). Nested tables become dotted keys: [app] name -> app.name.
+# Placeholders use $name / ${name} (string.Template), never str.format.
+
+[app]
+name = "FilmAnalyser"
+tagline = "A craft analyser: it measures form and flags notable sections with timestamps."
+
+[cli]
+version = "$name $version"
+
+[error]
+internal = "An unexpected internal error occurred."
+input = "The input is invalid."
+decode = "The film could not be decoded."
+model = "A model file is missing or failed its integrity check."
+storage = "The feature store is unreadable or incompatible."
+analysis = "The analysis could not be completed."

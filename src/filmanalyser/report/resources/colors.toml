@@ -1,0 +1,22 @@
+# Design tokens: the only place colours are defined. Emitted as CSS variables (--name).
+# Both themes must define the same names; contrast is checked in tests/architecture.
+
+[light]
+background = "#ffffff"
+surface = "#f4f5f7"
+text = "#1a1d21"
+text-muted = "#4a5260"
+accent = "#0b5cad"
+warning = "#8a4b00"
+danger = "#b3261e"
+border = "#757c88"
+
+[dark]
+background = "#0f1216"
+surface = "#1a1e24"
+text = "#e8eaed"
+text-muted = "#a9b0bb"
+accent = "#6cb2f5"
+warning = "#f0b35a"
+danger = "#ff8a80"
+border = "#7a828e"

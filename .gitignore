@@ -1,1 +1,20 @@
 .claude/settings.local.json
+.venv/
+__pycache__/
+*.py[cod]
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+dist/
+build/
+.cache/
+*.egg-info/
+.DS_Store
+# Real film clips must never enter the repo (see EXECUTION_PLAN: fixtures are synthetic).
+*.mp4
+*.mkv
+*.mov

@@ -56,6 +56,8 @@ Then pause for your approval.
 ---
 
 ## Phase 1: Foundation and guardrails
+**Status: built and green locally; NOT closed. Two items need a GitHub remote and are tracked in "Final phase: Pending items" at the end of this file. Handoff: `docs/handoff/phase-1.md`.**
+
 **Goal:** An empty but fully green project with every rule automated.
 - **Tests first:** the architecture tests (file size, layer imports, hex/string literal bans, banned security patterns) are written first and run against a skeleton.
 - **Deliver:** `pyproject.toml`, `Makefile` (`make check`), lint/type/security configs, package skeleton, resource files (`strings.toml`, `colors.toml`) with a loader and a typed accessor (`Strings`, `ColorTokens`), CI-equivalent local script, `git init` + `.pre-commit-config.yaml`, ruff complexity rules, the extractor registry skeleton (`extractors/registry.py`), `.github/workflows/ci.yml` (same `make check`, macOS + Linux matrix), branch protection on `main`, Conventional Commits config.
@@ -152,7 +154,7 @@ Tests are listed alongside the code they cover (written first). Every phase also
 
 | Phase | Source / config files | Test files |
 |---|---|---|
-| **1 Foundation** | `pyproject.toml`, `uv.lock`, `Makefile`, `.pre-commit-config.yaml`, `.gitignore`, `src/filmanalyser/__init__.py`, `core/config.py`, `core/errors.py`, `report/resources/strings.toml`, `report/resources/colors.toml`, `report/resources/strings.py`, `report/resources/colors.py`, `scripts/guard_selftest.py` | `tests/architecture/test_file_size.py`, `test_layer_imports.py`, `test_no_hardcoded_strings.py`, `test_no_hardcoded_colors.py`, `test_security_patterns.py`, `test_color_contrast.py`; `tests/unit/test_resources.py` |
+| **1 Foundation** | `pyproject.toml`, `uv.lock`, `Makefile`, `.pre-commit-config.yaml`, `.gitignore`, `src/filmanalyser/__init__.py`, `core/config.py`, `core/errors.py`, `report/resources/strings.toml`, `report/resources/colors.toml`, `report/resources/strings.py`, `report/resources/colors.py`, `scripts/guard_selftest.py`, `scripts/guard_probes.py`, `core/extractor.py`, `extractors/registry.py`, `report/resources/_toml.py`, `.python-version`, `.github/workflows/ci.yml`, `docs/BRANCH_PROTECTION.md`, `docs/handoff/phase-1.md`, empty layer packages (`media`, `pipeline`, `storage`, `analysis`, `cli`) | `tests/architecture/test_file_size.py`, `test_layer_imports.py`, `test_no_hardcoded_strings.py`, `test_no_hardcoded_colors.py`, `test_security_patterns.py`, `test_color_contrast.py`, `test_frozen_dataclasses.py`, `test_function_limits.py`, `test_ci_workflow.py`; `tests/unit/test_resources.py`, `test_config.py`, `test_errors.py`, `test_registry.py`; `tests/integration/test_wheel_resources.py` |
 | **2 Decoder** | `core/chunk.py`, `core/extractor.py` (protocol), `media/probe.py`, `media/ffmpeg_stream.py`, `media/chunker.py`, `media/paths.py` | `tests/fixtures/make_synthetic.py`; `unit/test_chunker.py` (incl. hypothesis), `test_probe.py`, `test_paths.py`; `integration/test_decode_stream.py`, `test_memory_flat.py` |
 | **3 Storage** | `storage/schema.py`, `storage/feature_store.py`, `storage/manifest.py` | `unit/test_schema.py`, `test_feature_store.py`, `test_manifest.py`; `integration/test_resume.py`, `test_determinism.py` |
 | **4 Video + skeleton** | `extractors/shot_cuts.py`, `extractors/color.py`, `extractors/letterbox.py`, `pipeline/runner.py` (wires extractors per chunk), `cli/main.py` (minimal), `report/` minimal (`viewmodel.py`, `renderer.py`, one template) | `unit/test_shot_cuts.py`, `test_color.py`, `test_letterbox.py`, `test_runner.py`; `integration/test_video_pipeline.py`, `test_real_clip_smoke.py` (skipped unless the env var is set; documented in the handoff) |
@@ -162,3 +164,15 @@ Tests are listed alongside the code they cover (written first). Every phase also
 | **8 CLI + release** | `cli/main.py` (full), `cli/args.py`, `docs/USAGE.md`, `docs/LIMITATIONS.md`, `scripts/validate_real_film.py` | `integration/test_cli.py`, `test_full_pipeline.py`, `test_exit_codes.py` |
 
 Any file that approaches 300 lines is split before the phase closes; the only exceptions carry an `# SRP-EXCEPTION:` comment explaining why.
+
+---
+
+## Final phase: Pending items
+Anything unfinished in an earlier phase is consolidated here. A phase listed below is not complete until its items are done. Nothing is hidden as silent debt.
+
+| # | From | Pending item | Why it is pending | How to close it |
+|---|------|--------------|-------------------|-----------------|
+| P1-1 | Phase 1 | **CI has never run.** `.github/workflows/ci.yml` is written and structurally tested, but the exit criterion "`make check` green ... in CI" is unverified | The repository has no GitHub remote yet; creating one is an outward-facing action that needs your approval | Follow `docs/BRANCH_PROTECTION.md` steps 1-2; confirm `ci` is green on macos-latest and ubuntu-latest; fix anything that differs from local |
+| P1-2 | Phase 1 | **Branch protection on `main` is not applied** (instructions are written) | Needs the remote from P1-1, and a GitHub plan that supports protection on private repos | `docs/BRANCH_PROTECTION.md` steps 3-4, then verify a direct push is rejected |
+
+Phase 1 is complete only when P1-1 and P1-2 are ticked.

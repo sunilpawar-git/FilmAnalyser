@@ -1,0 +1,41 @@
+# Fast subset of `make check`. Local hooks only: nothing is fetched from the network,
+# and the tool versions are the ones pinned in uv.lock. Install with `make hooks`.
+default_install_hook_types: [pre-commit, commit-msg]
+repos:
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff lint
+        entry: uv run --locked ruff check .
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: ruff-format
+        name: ruff format
+        entry: uv run --locked ruff format --check .
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: mypy
+        name: mypy --strict
+        entry: uv run --locked mypy
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: architecture
+        name: architecture guards
+        entry: uv run --locked pytest tests/architecture --no-cov -q
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: gitleaks
+        name: gitleaks (staged changes)
+        entry: gitleaks git --staged --no-banner --redact
+        language: system
+        pass_filenames: false
+        always_run: true
+      - id: conventional-commit
+        name: Conventional Commits
+        entry: uv run --locked cz check --allow-abort --commit-msg-file
+        language: system
+        stages: [commit-msg]
