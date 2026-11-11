@@ -5,6 +5,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -19,7 +20,7 @@ FILM_SECONDS = 120
 FACTOR = 10
 
 
-def _decode_in_fresh_process(film: Path) -> dict[str, float]:
+def _decode_in_fresh_process(film: Path) -> dict[str, Any]:
     done = subprocess.run(
         [sys.executable, "-m", "tests.integration._decode_worker", str(film), str(CHUNK_SECONDS)],
         check=True,
@@ -27,14 +28,14 @@ def _decode_in_fresh_process(film: Path) -> dict[str, float]:
         text=True,
         cwd=REPO,  # the worker is imported as `tests.integration...` from the repo root
     )
-    result: dict[str, float] = json.loads(done.stdout.splitlines()[-1])
+    result: dict[str, Any] = json.loads(done.stdout.splitlines()[-1])
     return result
 
 
 @pytest.fixture(scope="module")
 def measurements(
     tmp_path_factory: pytest.TempPathFactory,
-) -> tuple[dict[str, float], dict[str, float]]:
+) -> tuple[dict[str, Any], dict[str, Any]]:
     work = tmp_path_factory.mktemp("memory")
     short = make_clip(work / "short.mp4", seconds=FILM_SECONDS)
     long = concat_clip(short, work / "long.mp4", times=FACTOR)
@@ -42,7 +43,7 @@ def measurements(
 
 
 def test_the_long_film_really_is_ten_times_longer(
-    measurements: tuple[dict[str, float], dict[str, float]],
+    measurements: tuple[dict[str, Any], dict[str, Any]],
 ) -> None:
     short, long = measurements
     assert short["chunks"] == 12
@@ -51,17 +52,20 @@ def test_the_long_film_really_is_ten_times_longer(
 
 
 def test_peak_rss_does_not_grow_with_film_length(
-    measurements: tuple[dict[str, float], dict[str, float]],
+    measurements: tuple[dict[str, Any], dict[str, Any]],
 ) -> None:
     short, long = measurements
     print(
         f"\nRSS flatness: {short['chunks']:.0f} chunks -> {short['peak_rss_mb']:.1f} MB; "
         f"{long['chunks']:.0f} chunks -> {long['peak_rss_mb']:.1f} MB"
     )
-    assert long["peak_rss_mb"] <= short["peak_rss_mb"] * (1 + GROWTH_ALLOWED) + SLACK_MB
+    limit = short["peak_rss_mb"] * (1 + GROWTH_ALLOWED) + SLACK_MB
+    assert long["peak_rss_mb"] <= limit, (
+        f"curves (peak MB after N chunks): {short['curve']} vs {long['curve']}"
+    )
 
 
 def test_peak_rss_is_far_below_the_budget(
-    measurements: tuple[dict[str, float], dict[str, float]],
+    measurements: tuple[dict[str, Any], dict[str, Any]],
 ) -> None:
     assert measurements[1]["peak_rss_mb"] < Config().ram_budget_mb / 4

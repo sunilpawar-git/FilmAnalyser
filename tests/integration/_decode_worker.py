@@ -12,10 +12,14 @@ from filmanalyser.media.telemetry import peak_rss_mb
 def main(path: str, chunk_seconds: float) -> None:
     config = Config(chunk_seconds=chunk_seconds, overlap_seconds=1.0, analysis_fps=10.0)
     chunks = frames = 0
+    curve: dict[str, float] = {}  # peak RSS after chunk N (powers of two): shows plateau vs creep
     for chunk in decode_chunks(path, config):
         chunks += 1
         frames += len(chunk.core)
-    print(json.dumps({"chunks": chunks, "frames": frames, "peak_rss_mb": peak_rss_mb()}))
+        if chunks & (chunks - 1) == 0:
+            curve[str(chunks)] = round(peak_rss_mb(), 1)
+    result = {"chunks": chunks, "frames": frames, "peak_rss_mb": peak_rss_mb(), "curve": curve}
+    print(json.dumps(result))
 
 
 if __name__ == "__main__":
