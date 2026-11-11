@@ -3,7 +3,7 @@
 import re
 import subprocess
 
-MIN_MAJOR = 6  # CI pins 6.0.1 on Linux; development runs 9.x
+MIN_MAJOR = 6  # CI pins 6.0.1 (Linux) and 9.0.2 (macOS); development runs 9.x
 
 
 def test_ffmpeg_and_ffprobe_meet_the_minimum_version() -> None:

@@ -16,10 +16,14 @@ concurrency:
 env:
   GITLEAKS_VERSION: "8.30.1"
   GITLEAKS_LINUX_SHA256: "551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb"
-  # Linux ffmpeg: static build, exact version, sha256 taken from a TLS download (no checksum is
-  # published for this release). macOS uses Homebrew, which cannot pin a version (DECISIONS #38).
+  # ffmpeg: static builds, exact versions, sha256 pinned (DECISIONS #38, #40). Linux: checksum taken
+  # from a TLS download (none is published for 6.0.1). macOS: the checksums the vendor publishes.
   FFMPEG_VERSION: "6.0.1"
   FFMPEG_LINUX_SHA256: "28268bf402f1083833ea269331587f60a242848880073be8016501d864bd07a5"
+  FFMPEG_MAC_VERSION: "9.0.2"
+  FFMPEG_MAC_BUILD: "1789931890_9.0.2"
+  FFMPEG_MAC_SHA256: "c8ed4c4e6978a03c485edbfe4e0a5dc2380f8a30bba5150531b31b094492d924"
+  FFPROBE_MAC_SHA256: "fcbe839537485eaee7a7a8bc5cbc0f90d53617e80943e8a5b2e31cb851197ea6"
 
 jobs:
   check:
@@ -63,9 +67,26 @@ jobs:
           fi
           echo "${FFMPEG_LINUX_SHA256}  ffmpeg.tar.xz" | sha256sum -c -
           sudo tar -xJf ffmpeg.tar.xz --strip-components=1 -C /usr/local/bin --wildcards '*/ffmpeg' '*/ffprobe'
-      - name: Install ffmpeg (macOS)
+      - name: Cache ffmpeg (macOS)
         if: runner.os == 'macOS'
-        run: brew install ffmpeg
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: |
+            ffmpeg.zip
+            ffprobe.zip
+          key: ffmpeg-mac-${{ env.FFMPEG_MAC_BUILD }}-${{ env.FFMPEG_MAC_SHA256 }}
+      - name: Install ffmpeg (macOS, pinned and checksum-verified)
+        if: runner.os == 'macOS'
+        run: |
+          base="https://ffmpeg.martin-riedl.de/download/macos/arm64/${FFMPEG_MAC_BUILD}"
+          [ -f ffmpeg.zip ] || curl -sSfL --retry 5 "$base/ffmpeg.zip" -o ffmpeg.zip
+          [ -f ffprobe.zip ] || curl -sSfL --retry 5 "$base/ffprobe.zip" -o ffprobe.zip
+          echo "${FFMPEG_MAC_SHA256}  ffmpeg.zip" | shasum -a 256 -c -
+          echo "${FFPROBE_MAC_SHA256}  ffprobe.zip" | shasum -a 256 -c -
+          sudo mkdir -p /usr/local/bin
+          sudo unzip -o ffmpeg.zip ffmpeg -d /usr/local/bin
+          sudo unzip -o ffprobe.zip ffprobe -d /usr/local/bin
+          sudo chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
       - name: Show ffmpeg version
         run: |
           ffmpeg -version | head -1

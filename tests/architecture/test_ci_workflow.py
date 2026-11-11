@@ -38,15 +38,20 @@ def test_make_check_stage_order_is_fail_fast() -> None:
     assert stages == ["lint", "typecheck", "test", "security", "build", "guards"]
 
 
-def test_ffmpeg_is_installed_on_both_oses() -> None:
-    assert re.search(r"brew install ffmpeg", WORKFLOW)  # macOS
-    assert re.search(r"FFMPEG_VERSION:\s*\"\d+\.\d+(\.\d+)?\"", WORKFLOW)  # Linux, pinned
+def test_ffmpeg_is_pinned_by_version_and_checksum_on_both_oses() -> None:
+    for name in ("FFMPEG_VERSION", "FFMPEG_MAC_VERSION"):
+        assert re.search(rf"{name}:\s*\"\d+\.\d+(\.\d+)?\"", WORKFLOW), name
+    for name in ("FFMPEG_LINUX_SHA256", "FFMPEG_MAC_SHA256", "FFPROBE_MAC_SHA256"):
+        assert re.search(rf"{name}:\s*\"[0-9a-f]{{64}}\"", WORKFLOW), name
+    assert "brew install ffmpeg" not in WORKFLOW  # Homebrew cannot pin a version
 
 
-def test_linux_ffmpeg_download_is_checksum_verified_and_cached() -> None:
-    assert re.search(r"FFMPEG_LINUX_SHA256:\s*\"[0-9a-f]{64}\"", WORKFLOW)
-    assert "sha256sum -c" in WORKFLOW.split("Install ffmpeg (Linux")[1]
-    assert "actions/cache@" in WORKFLOW
+def test_ffmpeg_downloads_are_checksum_verified_and_cached() -> None:
+    linux = WORKFLOW.split("Install ffmpeg (Linux")[1].split("- name:")[0]
+    mac = WORKFLOW.split("Install ffmpeg (macOS")[1].split("- name:")[0]
+    assert "sha256sum -c" in linux
+    assert mac.count("shasum -a 256 -c") == 2  # ffmpeg and ffprobe
+    assert WORKFLOW.count("actions/cache@") == 2  # one per OS
 
 
 def test_ci_logs_the_ffmpeg_version() -> None:
