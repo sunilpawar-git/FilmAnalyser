@@ -1,7 +1,7 @@
 # Phase 3 handoff: Storage, versioning, resumability
 
 **Status: implemented, locally green. NOT complete:** CI on both OSes and your approval are outstanding, and
-**P3-1** is open (see `EXECUTION_PLAN.md`, "Final phase: Pending items").
+**P3-1 and P3-2** are open (see `EXECUTION_PLAN.md`, "Final phase: Pending items").
 
 ## What was built
 - `storage/schema.py` (SSOT: names, types, version hash), `storage/manifest.py` (resume record, keyed by input hash +
@@ -29,7 +29,7 @@
 
 ### Unresolvable in Phase 3 (consolidated in `EXECUTION_PLAN.md`)
 - **P3-1** Resume on real footage unverified (synthetic clip only); close in the Phase 4 real-clip smoke test.
-- CI result for the pushed branch is recorded after the push.
+- **P3-2** CI has not run: `ci.yml` only triggers on `main` pushes and PRs, so pushing the branch started nothing.
 
 ## 3. Build confirmation: raw `make ci` output (exit code 0, ANSI stripped)
 
