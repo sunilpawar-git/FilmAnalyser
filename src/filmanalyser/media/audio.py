@@ -165,7 +165,7 @@ def decode_window(path: Path, start_s: float, duration_s: float, channels: int) 
     return _fit(done.stdout, count, channels)
 
 
-def _window(
+def audio_window(
     path: Path, container_start_s: float, audio_start_s: float, duration_s: float, channels: int
 ) -> Samples:
     """`duration_s` of audio starting at `container_start_s` on the container clock (where the
@@ -196,7 +196,7 @@ def attach_audio(
     (DECISIONS #67)."""
     for chunk in chunks:
         film_start = chunk.first_frame_s
-        samples = _window(
+        samples = audio_window(
             path, picture_start_s + film_start, audio_start_s, chunk.end_s - film_start, channels
         )
         yield dataclasses.replace(chunk, audio=Audio(AUDIO_RATE, film_start, samples))
