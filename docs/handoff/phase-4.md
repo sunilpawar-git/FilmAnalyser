@@ -1,6 +1,6 @@
 # Phase 4 handoff: Video extractors and walking skeleton
 
-**Status: implemented; CI green on macOS and Linux (run 43171687495, PR #4).** P3-1 (resume on real footage) is **closed**. The phase is **not complete** until P4-1 is closed: the nightly real-clip job needs the repository variables `REAL_CLIP_URL` and `REAL_CLIP_SHA256`, which you set. Then your approval. See `EXECUTION_PLAN.md`, "Final phase: Pending items".
+**Status: complete.** Merged (PR #4), tagged `phase-4`. CI green on macOS and Linux (run 43171687495). P3-1 closed. P4-1 closed: the nightly real-clip job (run 43223571242 on `main`) and the slow checks are green on GitHub. The limitations below are consolidated as P4-3 and P4-4 in `EXECUTION_PLAN.md`.
 
 ## What was built
 - **Extractors** (`extractors/`, core imports only): `shot_cuts` (hard cuts from soft colour histograms, boundary rule in DECISIONS #55), `color` (brightness, contrast, colourfulness, warmth, letterbox), `letterbox` (a helper, no `EXTRACTOR`: bars from the median row brightness over the chunk). No OpenCV (DECISIONS #51).
@@ -215,7 +215,7 @@ Property test (Improvement 4): for any chunk size from 4 to 30 frames and any ov
 ## CI (PR #4)
 Run 43171687495: `make check (macos-latest)` and `make check (ubuntu-latest)` both green. Linux: `ffmpeg version 6.0.1-static`, version check passed, `test_resume_grid.py` passed. macOS: `ffmpeg version 9.0.2`. Both: 482 passed, 4 deselected, coverage 100%.
 
-## Next
-The nightly workflow has run only locally (`make nightly`: 4 passed, `BENCH` record: 10 chunks, 5.4 s, about 111 film seconds per wall second, peak RSS 174 MB, on this laptop). It has not run on GitHub, so its first real run is part of P4-1.
-
-Set the repository variables `REAL_CLIP_URL` and `REAL_CLIP_SHA256` to close P4-1 (or tell me to leave it open). Then your approval: `make ship` (rebase-merge once green), `make tag-phase N=4 PR=4`, and the explicit push of the tag. Nothing else starts before that approval (no Phase 5).
+## Closure
+- P4-1 closed: repository variables set; nightly run 43223571242 on `main`: real-clip job and slow checks (macOS, Linux) green.
+- Approved by the owner; PR #4 merged (commit cd1e521); tag `phase-4` pushed.
+- Phase 4 review (2026-11-12): every deliverable in `EXECUTION_PLAN.md` is present. The stale status text in this handoff was corrected. No other tech debt was found.
