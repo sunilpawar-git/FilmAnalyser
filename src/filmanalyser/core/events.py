@@ -10,6 +10,7 @@ import logging
 from collections.abc import Mapping
 
 LOGGER = logging.getLogger("filmanalyser")
+LOG_FORMAT = "%(message)s"  # the CLI prints the JSON event line as it is
 
 
 def _clean(value: str | int | float | bool) -> str | int | float | bool:

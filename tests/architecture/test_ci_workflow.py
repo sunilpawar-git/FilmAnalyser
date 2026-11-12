@@ -5,6 +5,7 @@ import re
 from tests.architecture._scan import REPO
 
 WORKFLOW = (REPO / ".github/workflows/ci.yml").read_text(encoding="utf-8")
+ACTION = (REPO / ".github/actions/setup-ffmpeg/action.yml").read_text(encoding="utf-8")
 MAKEFILE = (REPO / "Makefile").read_text(encoding="utf-8")
 
 
@@ -29,7 +30,7 @@ def test_workflow_uses_least_privilege() -> None:
 def test_actions_are_pinned_to_commit_shas() -> None:
     refs = re.findall(r"uses:\s*(\S+)", WORKFLOW)
     assert refs
-    assert all(re.search(r"@[0-9a-f]{40}$", ref) for ref in refs), refs
+    assert all(re.search(r"@[0-9a-f]{40}$", r) or r.startswith("./") for r in refs), refs
 
 
 def test_make_check_stage_order_is_fail_fast() -> None:
@@ -38,21 +39,25 @@ def test_make_check_stage_order_is_fail_fast() -> None:
     assert stages == ["lint", "typecheck", "test", "security", "build", "guards"]
 
 
-def test_ffmpeg_is_pinned_by_version_and_checksum_on_both_oses() -> None:
-    for name in ("FFMPEG_VERSION", "FFMPEG_MAC_VERSION"):
-        assert re.search(rf"{name}:\s*\"\d+\.\d+(\.\d+)?\"", WORKFLOW), name
-    for name in ("FFMPEG_LINUX_SHA256", "FFMPEG_MAC_SHA256", "FFPROBE_MAC_SHA256"):
-        assert re.search(rf"{name}:\s*\"[0-9a-f]{{64}}\"", WORKFLOW), name
+def test_ci_uses_the_shared_ffmpeg_action() -> None:
+    assert "./.github/actions/setup-ffmpeg" in WORKFLOW
     assert "brew install ffmpeg" not in WORKFLOW  # Homebrew cannot pin a version
 
 
+def test_ffmpeg_is_pinned_by_version_and_checksum_on_both_oses() -> None:
+    for name in ("FFMPEG_VERSION", "FFMPEG_MAC_VERSION"):
+        assert re.search(rf"{name}:\s*\"\d+\.\d+(\.\d+)?\"", ACTION), name
+    for name in ("FFMPEG_LINUX_SHA256", "FFMPEG_MAC_SHA256", "FFPROBE_MAC_SHA256"):
+        assert re.search(rf"{name}:\s*\"[0-9a-f]{{64}}\"", ACTION), name
+
+
 def test_ffmpeg_downloads_are_checksum_verified_and_cached() -> None:
-    linux = WORKFLOW.split("Install ffmpeg (Linux")[1].split("- name:")[0]
-    mac = WORKFLOW.split("Install ffmpeg (macOS")[1].split("- name:")[0]
+    linux = ACTION.split("Install ffmpeg (Linux")[1].split("- name:")[0]
+    mac = ACTION.split("Install ffmpeg (macOS")[1].split("- name:")[0]
     assert "sha256sum -c" in linux
     assert mac.count("shasum -a 256 -c") == 2  # ffmpeg and ffprobe
-    assert WORKFLOW.count("actions/cache@") == 2  # one per OS
+    assert ACTION.count("actions/cache@") == 2  # one per OS
 
 
 def test_ci_logs_the_ffmpeg_version() -> None:
-    assert "ffmpeg -version" in WORKFLOW
+    assert "ffmpeg -version" in ACTION

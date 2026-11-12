@@ -1,7 +1,6 @@
 """Input path validation and tool lookup: the first security boundary before any subprocess."""
 
 import os
-import stat
 from pathlib import Path
 
 import pytest
@@ -42,16 +41,13 @@ def test_directory_is_rejected(tmp_path: Path) -> None:
     assert info.value.key == "error.input.not_a_file"
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root can read anything")
-def test_unreadable_file_is_rejected(tmp_path: Path) -> None:
+def test_unreadable_file_is_rejected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Simulated, not chmod-based: root can read any file, so a chmod test would silently skip."""
     path = _film(tmp_path)
-    path.chmod(0)
-    try:
-        with pytest.raises(InputError) as info:
-            validate_input_path(path)
-        assert info.value.key == "error.input.unreadable"
-    finally:
-        path.chmod(stat.S_IRUSR | stat.S_IWUSR)
+    monkeypatch.setattr(os, "access", lambda _p, _mode: False)
+    with pytest.raises(InputError) as info:
+        validate_input_path(path)
+    assert info.value.key == "error.input.unreadable"
 
 
 @pytest.mark.parametrize("raw", ["", "   ", "film\x00.mp4"])
@@ -114,15 +110,19 @@ def test_scrub_stderr_survives_invalid_utf8(tmp_path: Path) -> None:
     assert isinstance(scrub_stderr(b"\xff\xfe bad", tmp_path / "f.mp4", limit=50), str)
 
 
-@pytest.mark.skipif(os.geteuid() == 0, reason="root can read anything")
-def test_unsearchable_directory_is_reported_as_unreadable(tmp_path: Path) -> None:
-    locked = tmp_path / "locked"
-    locked.mkdir()
-    film = _film(locked)
-    locked.chmod(0)
-    try:
-        with pytest.raises(InputError) as info:
-            validate_input_path(film)
-        assert info.value.key == "error.input.unreadable"
-    finally:
-        locked.chmod(stat.S_IRWXU)
+def test_unsearchable_directory_is_reported_as_unreadable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Simulated: resolving through an unsearchable directory raises PermissionError."""
+    film = _film(tmp_path)
+    real_resolve = Path.resolve
+
+    def denied(self: Path, strict: bool = False) -> Path:
+        if self == film:
+            raise PermissionError(13, "denied")
+        return real_resolve(self, strict=strict)
+
+    monkeypatch.setattr(Path, "resolve", denied)
+    with pytest.raises(InputError) as info:
+        validate_input_path(film)
+    assert info.value.key == "error.input.unreadable"

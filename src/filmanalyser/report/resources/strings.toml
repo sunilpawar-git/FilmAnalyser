@@ -7,6 +7,13 @@ tagline = "A craft analyser: it measures form and flags notable sections with ti
 
 [cli]
 version = "$name $version"
+prog = "filmanalyser"
+arg_film = "film"
+help_film = "The film to analyse (an mp4 file)."
+help_out = "The folder for the feature store. A second run with the same folder resumes."
+help_report = "Where to write the HTML report (default: report.html inside the output folder)."
+help_verbose = "Print structured progress events to stderr."
+done = "Analysed $film: $cuts hard cuts. Report written to $report."
 
 # Every error category has a `default` message; specific messages sit beside it. Placeholders are
 # filled from the error's fields (basenames only, never full paths).
@@ -49,3 +56,15 @@ settings_mismatch = "The results in '$name' were made with different chunk setti
 
 [error.analysis]
 default = "The analysis could not be completed."
+
+[report]
+title = "Shot cut report"
+film = "Film"
+film_minutes = "Film length (minutes)"
+total_cuts = "Hard cuts found"
+average_shot = "Average shot length (seconds)"
+
+[chart.cut_rate]
+label = "Hard cuts per minute over the film"
+caption = "Hard cuts per minute, one point per chunk, against film time."
+

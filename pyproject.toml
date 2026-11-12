@@ -10,6 +10,7 @@ readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"
 dependencies = [
+    "jinja2>=3.1.6",
     "numpy>=2.4.6",
     "pyarrow>=24",
 ]
@@ -27,6 +28,9 @@ dev = [
     "pytest-cov>=6.0",
     "ruff>=0.9",
 ]
+
+[project.scripts]
+filmanalyser = "filmanalyser.cli.main:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/filmanalyser"]
@@ -77,6 +81,10 @@ testpaths = ["tests"]
 pythonpath = ["."]
 addopts = "-ra --strict-markers --strict-config --cov=filmanalyser --cov-branch --cov-fail-under=90 --cov-report=term-missing:skip-covered"
 xfail_strict = true
+markers = [
+    "real_clip: real footage smoke test (DECISIONS #53); run by `make real-clip` only",
+    "slow: long-running check run nightly by `make nightly`; not part of `make check`",
+]
 filterwarnings = ["error"]
 
 [tool.coverage.report]

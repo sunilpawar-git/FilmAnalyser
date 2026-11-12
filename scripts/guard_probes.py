@@ -131,7 +131,12 @@ def _mutation(name: str, path: str, change: tuple[str, str], tests: str, expect:
 
 def mutation_probes() -> list[Probe]:
     """Remove one security measure from the real code; the named test must then fail."""
-    return [*media_mutations(), *file_safety_mutations(), *store_mutations()]
+    return [
+        *media_mutations(),
+        *media_path_mutations(),
+        *file_safety_mutations(),
+        *store_mutations(),
+    ]
 
 
 def media_mutations() -> list[Probe]:
@@ -151,6 +156,12 @@ def media_mutations() -> list[Probe]:
             "tests/unit/test_ffmpeg_stream.py",
             "test_argv_is_a_list_with_a_file_protocol_input_and_no_audio",
         ),
+    ]
+
+
+def media_path_mutations() -> list[Probe]:
+    base = "src/filmanalyser/media"
+    return [
         _mutation(
             "path validation accepts directories",
             f"{base}/paths.py",
@@ -168,7 +179,10 @@ def media_mutations() -> list[Probe]:
         _mutation(
             "resume no longer seeks (re-decodes finished chunks)",
             f"{base}/ffmpeg_stream.py",
-            ('seek = ["-ss", str(start_s)] if start_s > 0 else []', "seek: list[str] = []"),
+            (
+                'skip = ["-ss", str(seek.start_s)] if seek.start_s > 0 else []',
+                "skip: list[str] = []",
+            ),
             "tests/unit/test_ffmpeg_stream.py",
             "test_argv_seeks_before_the_input_only_when_resuming",
         ),

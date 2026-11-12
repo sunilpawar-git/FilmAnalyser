@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'">
+<title>{{ t('report.title') }}</title>
+<style>
+{{ css }}
+body { margin: 0; padding: 16px; background: var(--background); color: var(--text); font-family: system-ui, sans-serif; }
+h1 { font-size: 1.4rem; margin: 0 0 4px; }
+p.tagline { color: var(--text-muted); margin: 0 0 16px; }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 4px 16px; margin: 0 0 16px; }
+dt { color: var(--text-muted); }
+dd { margin: 0; }
+figure { margin: 0; padding: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; }
+figcaption { color: var(--text-muted); font-size: 0.9rem; margin-top: 8px; }
+svg { width: 100%; height: auto; display: block; }
+.line { fill: none; stroke: var(--accent); stroke-width: 2; }
+.axis { stroke: var(--border); stroke-width: 1; }
+</style>
+</head>
+<body>
+<h1>{{ t('report.title') }}</h1>
+<p class="tagline">{{ t('app.tagline') }}</p>
+<dl>
+  <dt>{{ t('report.film') }}</dt><dd>{{ view.film }}</dd>
+  <dt>{{ t('report.film_minutes') }}</dt><dd>{{ view.film_minutes_text }}</dd>
+  <dt>{{ t('report.total_cuts') }}</dt><dd>{{ view.total_cuts }}</dd>
+  <dt>{{ t('report.average_shot') }}</dt><dd>{{ view.average_shot_text }}</dd>
+</dl>
+<figure>
+  <svg viewBox="0 0 {{ view.chart_width }} {{ view.chart_height }}" role="img" aria-label="{{ t('chart.cut_rate.label') }}">
+    <line class="axis" x1="0" y1="{{ view.chart_height }}" x2="{{ view.chart_width }}" y2="{{ view.chart_height }}"></line>
+    {% if view.chart_points %}<polyline class="line" points="{{ view.chart_points }}"></polyline>{% endif %}
+  </svg>
+  <figcaption>{{ t('chart.cut_rate.caption') }}</figcaption>
+</figure>
+</body>
+</html>

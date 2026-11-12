@@ -16,10 +16,11 @@ from dataclasses import dataclass
 import pyarrow as pa
 
 from filmanalyser.core.errors import StorageError
+from filmanalyser.core.features import CHUNK_INDEX, END_S, START_S
 
 LAYOUT_VERSION = 1  # bump when the file layout itself changes (names, columns, metadata)
 MANIFEST_NAME = "manifest.json"
-INDEX_COLUMN, START_COLUMN, END_COLUMN = "chunk_index", "start_s", "end_s"
+INDEX_COLUMN, START_COLUMN, END_COLUMN = CHUNK_INDEX, START_S, END_S
 META_VERSION = b"filmanalyser.feature_version"
 META_LAYOUT = b"filmanalyser.layout_version"
 _NAME = re.compile(r"^[a-z][a-z0-9_]*$")
