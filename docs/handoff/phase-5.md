@@ -41,6 +41,7 @@
 | 14 | The `models/` location (plan) versus the package (needed by the installed wheel) | Recorded as DECISIONS #62; the wheel test asserts the model, manifest and licence are in the wheel (`test_wheel_resources.py`) |
 | 15 | Model fetch logic untested because it is network code | The refusal and argv logic are tested without the network (`test_model_fetch.py`); `make models` was run once for real: download, verify, install, same hash |
 | 16 | The nightly real-clip job did not check audio | `test_real_clip_audio_features_are_well_formed` asserts finite loudness in range, peaks at most 0 dBFS, and ratios summing to 1; it passes locally (below) |
+| 17 | CI (Ubuntu, ffmpeg 6.0.1) failed 10 tests: the MP4 muxer rejects `pcm_s16le` ("Could not find tag for codec pcm_s16le"). Local ffmpeg 9.0.2 accepts it, so the local build passed | The synthetic audio track is written as QuickTime (`-f mov`, the name stays `.mp4`), which carries PCM on every ffmpeg version (`tests/fixtures/make_synthetic.py::av_clip_argv`). The non-clip tests (onnxruntime, the VAD) already passed on Linux |
 
 No other tech debt was found. Nothing is hidden: the open items are in the table below.
 
@@ -87,7 +88,7 @@ No other tech debt was found. Nothing is hidden: the open items are in the table
 uv run --locked ruff check .
 All checks passed!
 uv run --locked ruff format --check .
-125 files already formatted
+126 files already formatted
 uv run --locked mypy
 Success: no issues found in 114 source files
 uv run --locked pytest tests/unit tests/architecture tests/integration -m "not real_clip and not slow"
@@ -162,7 +163,7 @@ TOTAL    1504      0    284      0   100%
 
 42 files skipped due to complete coverage.
 Required test coverage of 90% reached. Total coverage: 100.00%
-====================== 602 passed, 6 deselected in 29.59s ======================
+====================== 602 passed, 6 deselected in 29.78s ======================
 mkdir -p .cache
 uv export --locked --no-emit-project --format requirements-txt -o .cache/audit-requirements.txt >/dev/null
 Resolved 73 packages in 2ms
@@ -170,8 +171,8 @@ uv run --locked pip-audit --require-hashes --disable-pip -r .cache/audit-require
 No known vulnerabilities found
 uv run --locked pip-licenses --allow-only="MIT License;MIT;BSD License;3-Clause BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Python Software Foundation License;PSF-2.0;ISC License (ISCL);MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0" --format=plain >/dev/null
 gitleaks dir . --no-banner --redact -v
-8:14PM INF scanned ~6225176 bytes (6.23 MB) in 399ms
-8:14PM INF no leaks found
+8:22PM INF scanned ~6251847 bytes (6.25 MB) in 415ms
+8:22PM INF no leaks found
 uv run --locked bandit -q -r src scripts -c pyproject.toml
 uv build --wheel --out-dir dist
 Building wheel...
