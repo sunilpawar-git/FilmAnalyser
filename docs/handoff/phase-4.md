@@ -10,6 +10,7 @@
 - **Report** (`report/`): `viewmodel.py` (pure: numbers and chart coordinates), `renderer.py` (Jinja2, autoescape on), `templates/report.html` (one inline SVG chart, CSP `default-src 'none'`, no script), `resources/layout.py` (packaged file names). Text from `strings.toml`, colours from `colors.toml`.
 - **CLI** (`cli/main.py`): `filmanalyser FILM --out DIR [--report FILE] [-v]`. Exit codes follow the taxonomy: 2 input, 3 decode or missing ffmpeg, 5 storage, 1 other. Prints the message for an error key, never a traceback.
 - **Core**: `core/features.py` (column names, one definition for store, view model and extractors); `core/config.py` (the new thresholds: `CUT_DISTANCE`, `HIST_BINS`, `LETTERBOX_LUMA`, `LUMA_WEIGHTS`, `EXTRACT_BUDGET_FRACTION`).
+- **Benchmark** (`tests/integration/test_benchmark.py`, `slow`): a 10-minute film analysed with the product defaults; prints one `BENCH` record (wall time, film seconds per wall second, peak RSS). `make nightly` copies it into the nightly job summary. It asserts the record is well-formed, not an absolute speed.
 - **CI and workflows**: `.github/actions/setup-ffmpeg` (the single home of the ffmpeg pins and checksums, used by `ci.yml` and `nightly.yml`; the action also checks the installed version against the pin); `.github/workflows/nightly.yml` (`make nightly` on both OSes; the real-clip job runs only when `REAL_CLIP_URL` is set, and verifies `REAL_CLIP_SHA256`). Make targets: `make nightly`, `make real-clip`.
 - **Guards**: `tests/architecture/test_no_skips.py` (DECISIONS #58), `test_nightly_workflow.py`, `scripts/guard_probes_phase4.py` (3 planted violations and 6 mutations, all caught).
 - **Dependency**: `jinja2` 3.1.6 with `markupsafe` 3.0.4 (DECISIONS #52). Licence BSD-3-Clause; pip-audit clean; in `uv.lock`.
@@ -51,22 +52,22 @@
 - **Features are per chunk.** Cut times are not stored, only counts; the chart is cuts per minute per chunk.
 
 ## 3. Build confirmation: raw `make check` output (ANSI stripped)
-`make check` exited 0 on this tree. Counts: 482 passed, 4 deselected (1 `real_clip`, 3 `slow`), 0 skipped, coverage 100.00%, guard self-test 0 failing (48 probes caught).
+`make check` exited 0 on this tree. Counts: 483 passed, 5 deselected (1 `real_clip`, 4 `slow`), 0 skipped, coverage 100.00%, guard self-test 0 failing (48 probes caught).
 
 ```text
 uv run --locked ruff check .
 All checks passed!
 uv run --locked ruff format --check .
-107 files already formatted
+109 files already formatted
 uv run --locked mypy
-Success: no issues found in 97 source files
+Success: no issues found in 98 source files
 uv run --locked pytest tests/unit tests/architecture tests/integration -m "not real_clip and not slow"
 ============================= test session starts ==============================
 platform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0
 rootdir: /Users/sunil/Downloads/FilmAnalyser
 configfile: pyproject.toml
 plugins: platformdirs-4.14.5, hypothesis-6.170.15, cov-7.1.0
-collected 486 items / 4 deselected / 482 selected
+collected 488 items / 5 deselected / 483 selected
 tests/unit/test_chunk.py ............................                    [  5%]
 tests/unit/test_chunker.py ..............                                [  8%]
 tests/unit/test_color.py .........                                       [ 10%]
@@ -82,20 +83,20 @@ tests/unit/test_paths.py ................                                [ 41%]
 tests/unit/test_probe.py .................                               [ 44%]
 tests/unit/test_registry.py .....................                        [ 49%]
 tests/unit/test_renderer.py .......                                      [ 50%]
-tests/unit/test_resources.py ..........................                  [ 56%]
+tests/unit/test_resources.py ..........................                  [ 55%]
 tests/unit/test_runner.py ......                                         [ 57%]
 tests/unit/test_schema.py ..............................                 [ 63%]
 tests/unit/test_shot_cuts.py ..........                                  [ 65%]
 tests/unit/test_viewmodel.py ......                                      [ 66%]
 tests/architecture/test_atomic_writes.py ....                            [ 67%]
 tests/architecture/test_ci_workflow.py ..........                        [ 69%]
-tests/architecture/test_color_contrast.py ..........................     [ 75%]
+tests/architecture/test_color_contrast.py ..........................     [ 74%]
 tests/architecture/test_error_keys.py ....                               [ 75%]
 tests/architecture/test_file_size.py ......                              [ 77%]
-tests/architecture/test_frozen_dataclasses.py ....                       [ 78%]
+tests/architecture/test_frozen_dataclasses.py ....                       [ 77%]
 tests/architecture/test_function_limits.py ...                           [ 78%]
-tests/architecture/test_layer_imports.py ............                    [ 81%]
-tests/architecture/test_nightly_workflow.py .......                      [ 82%]
+tests/architecture/test_layer_imports.py ............                    [ 80%]
+tests/architecture/test_nightly_workflow.py ........                     [ 82%]
 tests/architecture/test_no_hardcoded_colors.py ........                  [ 84%]
 tests/architecture/test_no_hardcoded_strings.py ..........               [ 86%]
 tests/architecture/test_no_skips.py ...                                  [ 86%]
@@ -118,16 +119,16 @@ Name    Stmts   Miss Branch BrPart  Cover   Missing
 TOTAL    1112      0    204      0   100%
 37 files skipped due to complete coverage.
 Required test coverage of 90% reached. Total coverage: 100.00%
-====================== 482 passed, 4 deselected in 18.28s ======================
+====================== 483 passed, 5 deselected in 18.98s ======================
 mkdir -p .cache
 uv export --locked --no-emit-project --format requirements-txt -o .cache/audit-requirements.txt >/dev/null
-Resolved 70 packages in 3ms
+Resolved 70 packages in 2ms
 uv run --locked pip-audit --require-hashes --disable-pip -r .cache/audit-requirements.txt
 No known vulnerabilities found
 uv run --locked pip-licenses --allow-only="MIT License;MIT;BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Python Software Foundation License;PSF-2.0;ISC License (ISCL);MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0" --format=plain >/dev/null
 gitleaks dir . --no-banner --redact -v
-12:19PM INF scanned ~3197952 bytes (3.20 MB) in 177ms
-12:19PM INF no leaks found
+12:35PM INF scanned ~3249715 bytes (3.25 MB) in 183ms
+12:35PM INF no leaks found
 uv run --locked bandit -q -r src scripts -c pyproject.toml
 uv build --wheel --out-dir dist
 Building wheel...
@@ -215,4 +216,6 @@ Property test (Improvement 4): for any chunk size from 4 to 30 frames and any ov
 Run 43171687495: `make check (macos-latest)` and `make check (ubuntu-latest)` both green. Linux: `ffmpeg version 6.0.1-static`, version check passed, `test_resume_grid.py` passed. macOS: `ffmpeg version 9.0.2`. Both: 482 passed, 4 deselected, coverage 100%.
 
 ## Next
+The nightly workflow has run only locally (`make nightly`: 4 passed, `BENCH` record: 10 chunks, 5.4 s, about 111 film seconds per wall second, peak RSS 174 MB, on this laptop). It has not run on GitHub, so its first real run is part of P4-1.
+
 Set the repository variables `REAL_CLIP_URL` and `REAL_CLIP_SHA256` to close P4-1 (or tell me to leave it open). Then your approval: `make ship` (rebase-merge once green), `make tag-phase N=4 PR=4`, and the explicit push of the tag. Nothing else starts before that approval (no Phase 5).
