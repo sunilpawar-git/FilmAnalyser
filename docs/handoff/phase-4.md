@@ -1,6 +1,6 @@
 # Phase 4 handoff: Video extractors and walking skeleton
 
-**Status: implemented and locally green.** P3-1 (resume on real footage) is **closed**. The phase is **not complete** until CI on macOS and Linux is green for this branch (P4-2) and you approve (P4-1 is the nightly real-clip configuration, which needs two repository variables you set). See `EXECUTION_PLAN.md`, "Final phase: Pending items".
+**Status: implemented; CI green on macOS and Linux (run 43171687495, PR #4).** P3-1 (resume on real footage) is **closed**. The phase is **not complete** until P4-1 is closed: the nightly real-clip job needs the repository variables `REAL_CLIP_URL` and `REAL_CLIP_SHA256`, which you set. Then your approval. See `EXECUTION_PLAN.md`, "Final phase: Pending items".
 
 ## What was built
 - **Extractors** (`extractors/`, core imports only): `shot_cuts` (hard cuts from soft colour histograms, boundary rule in DECISIONS #55), `color` (brightness, contrast, colourfulness, warmth, letterbox), `letterbox` (a helper, no `EXTRACTOR`: bars from the median row brightness over the chunk). No OpenCV (DECISIONS #51).
@@ -40,8 +40,8 @@
 | 20 | `EXECUTION_PLAN.md`: a pending-table row merged into a sentence, and blank lines split the table | Fixed; the table renders as one block |
 
 ### Unresolvable in Phase 4 (fail loudly; consolidated in `EXECUTION_PLAN.md`)
-- **P4-1** The nightly real-clip job is configured but inactive until the repository variables `REAL_CLIP_URL` and `REAL_CLIP_SHA256` are set. That is a repository settings change; I did not make it.
-- **P4-2** CI on both OSes for this branch has not run yet. The Linux job runs ffmpeg 6.0.1; this machine has only 9.0.2, and I did not download and run a second binary here (house rule). The grid test and the version check are the parts most sensitive to the ffmpeg version.
+- **P4-1 (open)** The nightly real-clip job is configured but inactive until the repository variables `REAL_CLIP_URL` and `REAL_CLIP_SHA256` are set. That is a repository settings change; I did not make it.
+- **P4-2 (closed)** CI on both OSes: run 43171687495, both jobs green. The Linux job ran ffmpeg 6.0.1 (the version check passed); macOS ran 9.0.2. This machine has only 9.0.2; the 6.0.1 run is CI's, not local (house rule: no downloaded binary was executed here).
 
 ### Known limitations (documented, not debt)
 - **Hard cuts only.** Fades and dissolves are not detected (no ground truth for them in the synthetic set); the real-footage check is Phase 8.
@@ -211,5 +211,8 @@ Property test (Improvement 4): for any chunk size from 4 to 30 frames and any ov
 ## Decisions added (`DECISIONS.md` #49 to #58)
 49 features declared on the protocol · 50 registry discovery · 51 numpy only, hard cuts · 52 Jinja2 renderer (measured) · 53 real-clip marker, never a skip · 54 P3-1 fix (mechanism corrected) · 55 overlap of at least one frame · 56 walking-skeleton scope · 57 constants and their basis · 58 composite action and no-skips guard.
 
+## CI (PR #4)
+Run 43171687495: `make check (macos-latest)` and `make check (ubuntu-latest)` both green. Linux: `ffmpeg version 6.0.1-static`, version check passed, `test_resume_grid.py` passed. macOS: `ffmpeg version 9.0.2`. Both: 482 passed, 4 deselected, coverage 100%.
+
 ## Next
-Open the PR with `make pr`, watch both `ci` jobs, fix anything that differs, and record the run in P4-2. Then stop for your approval before `make ship`, `make tag-phase N=4 PR=<n>`, and any Phase 5 work.
+Set the repository variables `REAL_CLIP_URL` and `REAL_CLIP_SHA256` to close P4-1 (or tell me to leave it open). Then your approval: `make ship` (rebase-merge once green), `make tag-phase N=4 PR=4`, and the explicit push of the tag. Nothing else starts before that approval (no Phase 5).
