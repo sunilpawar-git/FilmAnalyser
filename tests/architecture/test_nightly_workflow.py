@@ -44,3 +44,9 @@ def test_the_ffmpeg_pins_live_once_in_the_composite_action() -> None:
 def test_make_nightly_and_real_clip_targets_exist() -> None:
     assert re.search(r"^nightly:", MAKEFILE, re.MULTILINE)
     assert re.search(r"^real-clip:", MAKEFILE, re.MULTILINE)
+
+
+def test_the_benchmark_line_is_copied_into_the_job_summary() -> None:
+    assert "tee nightly.log" in NIGHTLY
+    assert "grep -o 'BENCH film_s=.*'" in NIGHTLY
+    assert "GITHUB_STEP_SUMMARY" in NIGHTLY

@@ -55,8 +55,9 @@ ci: ## what CI runs
 	$(UV) sync --locked
 	$(MAKE) check
 
+# -s lets the BENCH record reach the nightly log (pytest otherwise captures passing output)
 nightly: ## slow checks (long-film memory, benchmarks): nightly workflow only
-	$(RUN) pytest -m slow --no-cov
+	$(RUN) pytest -m slow --no-cov -s
 
 real-clip: ## real footage smoke test: FILMANALYSER_REAL_CLIP=/path/to/clip.mov make real-clip
 	$(RUN) pytest -m real_clip --no-cov

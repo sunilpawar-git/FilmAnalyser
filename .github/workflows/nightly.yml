@@ -33,7 +33,15 @@ jobs:
           enable-cache: true
       - name: Install ffmpeg (pinned, checksum-verified)
         uses: ./.github/actions/setup-ffmpeg
-      - run: make nightly
+      - name: Slow checks (long-film memory, benchmark)
+        shell: bash
+        run: |
+          set -o pipefail
+          make nightly 2>&1 | tee nightly.log
+      - name: Record the benchmark in the job summary
+        if: always()
+        shell: bash
+        run: grep -o 'BENCH film_s=.*' nightly.log >> "$GITHUB_STEP_SUMMARY" || true
 
   real-clip:
     name: real footage smoke test
