@@ -24,6 +24,7 @@ from filmanalyser.core.chunk import Chunk, Frames, span_for
 from filmanalyser.core.config import STDERR_LIMIT_BYTES, Config
 from filmanalyser.core.errors import DecodeError
 from filmanalyser.core.events import log_event
+from filmanalyser.media.audio import attach_audio
 from filmanalyser.media.chunker import chunk_frames
 from filmanalyser.media.paths import find_tool, scrub_stderr, validate_input_path
 from filmanalyser.media.probe import probe_video
@@ -147,12 +148,16 @@ def _timed(chunks: Iterator[Chunk], film: str) -> Iterator[Chunk]:
 
 
 def decode_chunks(
-    raw_path: str | os.PathLike[str], config: Config, start_chunk: int = 0
+    raw_path: str | os.PathLike[str],
+    config: Config,
+    start_chunk: int = 0,
+    channels: int | None = None,
 ) -> Iterator[Chunk]:
     """Validate, probe and stream a film as overlapping chunks (the Phase 2 entry point).
 
     `start_chunk` resumes a run: chunks before it are not decoded (only the overlap that chunk
-    needs as context is), and the chunks that follow are identical to an uninterrupted run's."""
+    needs as context is), and the chunks that follow are identical to an uninterrupted run's.
+    `channels` (from `media.audio.audio_channels`) asks for each chunk's audio as well (Phase 5)."""
     path = validate_input_path(raw_path)
     info = probe_video(path)
     size = info.scaled_size(config.frame_width)
@@ -164,4 +169,6 @@ def decode_chunks(
     seek = Seek(span.context_start / config.analysis_fps, info.start_s)
     frames = stream_frames(path, config, size, seek)
     chunks = chunk_frames(frames, config, (size[1], size[0]), start_chunk)
+    if channels is not None:
+        chunks = attach_audio(chunks, path, channels)
     yield from _timed(chunks, path.name)

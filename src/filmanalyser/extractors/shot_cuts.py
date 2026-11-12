@@ -63,6 +63,7 @@ class ShotCuts:
     name: str = NAME
     version: int = VERSION
     features: tuple[str, ...] = FEATURES
+    needs_audio: bool = False
 
     def extract(self, chunk: Chunk) -> Mapping[str, float]:
         distances = frame_distances(chunk.frames)

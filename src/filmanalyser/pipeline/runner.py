@@ -2,7 +2,7 @@
 next chunk (DECISIONS #44, #45). This module is the only place the three pieces meet."""
 
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterator, Mapping
 from pathlib import Path
 
 from filmanalyser.core.chunk import Chunk
@@ -10,8 +10,10 @@ from filmanalyser.core.config import Config
 from filmanalyser.core.errors import InputError
 from filmanalyser.core.events import log_event
 from filmanalyser.extractors.registry import ExtractorRegistry, discover
+from filmanalyser.media.audio import audio_channels
 from filmanalyser.media.ffmpeg_stream import decode_chunks
 from filmanalyser.media.paths import validate_input_path
+from filmanalyser.media.vad import VoiceDetector, attach_voice
 from filmanalyser.storage.feature_store import FeatureStore
 from filmanalyser.storage.files import sha256_file
 from filmanalyser.storage.manifest import RunKey
@@ -25,6 +27,27 @@ def schema_for(registry: ExtractorRegistry) -> FeatureSchema:
     return FeatureSchema(
         tuple(ExtractorColumns(e.name, e.version, tuple(e.features)) for e in registry)
     )
+
+
+def select_extractors(registry: ExtractorRegistry, has_audio: bool) -> ExtractorRegistry:
+    """The extractors this run can use: audio extractors are dropped for a film without audio, and
+    the run then stores video features only (DECISIONS #64)."""
+    chosen = ExtractorRegistry()
+    for extractor in registry:
+        if extractor.needs_audio and not has_audio:
+            log_event("audio_extractor_skipped", name=extractor.name)
+            continue
+        chosen.register(extractor)
+    return chosen
+
+
+def chunk_stream(path: Path, config: Config, start: int, channels: int | None) -> Iterator[Chunk]:
+    """The decoded chunks of a run. With audio, each chunk also carries its audio and speech
+    probabilities (the voice model is loaded once for the run and verified before use)."""
+    chunks = decode_chunks(path, config, start_chunk=start, channels=channels)
+    if channels is None:
+        return chunks
+    return attach_voice(chunks, VoiceDetector.load())
 
 
 def validate_for_pipeline(config: Config) -> None:
@@ -53,14 +76,16 @@ def analyse(
     `on_decoded` and `on_stored` are observers (the kill-and-resume tests use them)."""
     settings = Config() if config is None else config
     validate_for_pipeline(settings)
-    active = discover()
     path = validate_input_path(film)
+    registry = discover()
+    channels = audio_channels(path) if any(e.needs_audio for e in registry) else None
+    active = select_extractors(registry, has_audio=channels is not None)
     schema = schema_for(active)
     key = RunKey(sha256_file(path), schema.version, settings.geometry())
     store = FeatureStore.open(out, schema, key)
     log_event("run_start", film=path.name, next_chunk=store.next_chunk)
     if not store.complete:
-        for chunk in decode_chunks(path, settings, start_chunk=store.next_chunk):
+        for chunk in chunk_stream(path, settings, store.next_chunk, channels):
             if on_decoded is not None:
                 on_decoded(chunk.index)
             outputs = extract_chunk(active, chunk)

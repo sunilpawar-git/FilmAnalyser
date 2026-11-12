@@ -9,6 +9,8 @@ from filmanalyser.core.errors import InputError
 STDERR_LIMIT_BYTES = 4096  # tool diagnostics kept; anything older is dropped
 PROBE_TIMEOUT_S = 30.0  # ffprobe must answer within this
 PROBE_MAX_OUTPUT_BYTES = 1024 * 1024  # a probe answer is a few hundred bytes; more is wrong
+MODEL_MAX_BYTES = 16 * 1024 * 1024  # the Silero model is 2.3 MB; a larger file is not it
+AUDIO_TIMEOUT_S = 120.0  # one chunk of audio (60 s by default) decodes in well under a second
 
 # Feature store bounds (SSOT; consumed by storage/). A chunk file holds one row of a few dozen
 # numbers and a manifest a hash per chunk, so anything this large is damaged or hostile.
@@ -24,6 +26,24 @@ LUMA_WEIGHTS = (0.2126, 0.7152, 0.0722)  # ITU-R BT.709 luma coefficients for R,
 EXTRACT_BUDGET_FRACTION = (
     0.25  # extraction may take this share of the film's duration (45 min / 3 h)
 )
+
+# Audio features (SSOT; consumed by media/ and extractors/). Chosen against synthetic clips with
+# known ground truth (DECISIONS #60). Audio is decoded at AUDIO_RATE: Silero VAD's rate.
+AUDIO_RATE = 16000  # Hz the decoder resamples to (BS.1770 specifies 48 kHz; see DECISIONS #61)
+AUDIO_MAX_CHANNELS = 2  # stereo at most; a multichannel mix is downmixed by ffmpeg
+VOICE_WINDOW = 512  # samples per voice decision (32 ms at 16 kHz): the Silero window size
+VOICE_CONTEXT = 64  # samples of the previous window the model reads with each window (Silero v5+)
+SPEECH_PROB = 0.5  # voice probability at or above which a window is speech
+SILENCE_DBFS = -50.0  # a window quieter than this (RMS, dBFS) is silence
+MUSIC_FLATNESS = (
+    0.2  # spectral flatness (0 pure tone, 1 white noise) below which non-speech is tonal
+)
+LOUDNESS_BLOCK_S = 0.4  # BS.1770 gating block length
+LOUDNESS_HOP_S = 0.1  # block hop (75% overlap)
+LOUDNESS_OFFSET_LU = -0.691  # BS.1770 constant: loudness = offset + 10 log10(mean square)
+LOUDNESS_ABS_GATE_LUFS = -70.0  # blocks quieter than this never count (also the silence floor)
+LOUDNESS_REL_GATE_LU = -10.0  # then blocks more than this below the mean of the rest are dropped
+PEAK_FLOOR_DBFS = -120.0  # the sample peak of digital silence
 
 # The settings that decide what a chunk contains: part of the key a stored run is cached by.
 GEOMETRY_FIELDS = ("chunk_seconds", "overlap_seconds", "analysis_fps", "frame_width")

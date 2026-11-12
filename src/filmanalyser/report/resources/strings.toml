@@ -36,6 +36,7 @@ no_video = "'$name' contains no video stream."
 no_duration = "The length of '$name' could not be determined."
 ffmpeg_failed = "ffmpeg stopped while decoding '$name' (exit code $code)."
 no_frames = "No video frames could be decoded from '$name'."
+audio_failed = "The audio of '$name' could not be decoded."
 
 [error.model]
 default = "A model file is missing or failed its integrity check."

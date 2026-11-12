@@ -98,3 +98,46 @@ def make_cut_clip(
 ) -> Path:
     subprocess.run(cut_clip_argv(out, scenes, size=size, fps=fps), check=True)
     return out
+
+
+def _av_source(seconds: float, size: tuple[int, int], fps: int) -> list[str]:
+    width, height = size
+    ramp = f"geq=lum='255*mod(T,{RAMP_PERIOD_S})/{RAMP_PERIOD_S}':cb=128:cr=128"
+    source = f"color=c=black:s={width}x{height}:r={fps}:d={seconds},{ramp}"
+    return ["-f", "lavfi", "-i", source]
+
+
+def av_clip_argv(
+    out: Path,
+    seconds: float,
+    audio_expr: str,
+    *,
+    stereo: bool = False,
+    size: tuple[int, int] = SIZE,
+    fps: int = FPS,
+) -> list[str]:
+    """A clip with the ramp picture and an audio track built from `audio_expr` (an ffmpeg aevalsrc
+    expression; commas inside it must be escaped as `\\,` because it is a filter graph). Stereo
+    takes one expression per channel, separated by `|`."""
+    layout = "stereo" if stereo else "mono"
+    audio = f"aevalsrc=exprs={audio_expr}:s=16000:d={seconds}:c={layout}"
+    return [
+        "ffmpeg", "-v", "error", "-y", *_av_source(seconds, size, fps),
+        "-f", "lavfi", "-i", audio,
+        *VIDEO_ENCODE, "-g", str(fps * 2), "-c:a", "pcm_s16le", "-shortest",
+        "--", str(out),
+    ]  # fmt: skip
+
+
+def make_av_clip(out: Path, seconds: float, audio_expr: str, *, stereo: bool = False) -> Path:
+    subprocess.run(av_clip_argv(out, seconds, audio_expr, stereo=stereo), check=True)
+    return out
+
+
+def make_silent_clip(
+    out: Path, seconds: float, *, size: tuple[int, int] = SIZE, fps: int = FPS
+) -> Path:
+    """A picture with no audio track at all (for the 'film without audio' path)."""
+    argv = ["ffmpeg", "-v", "error", "-y", *_av_source(seconds, size, fps), *VIDEO_ENCODE]
+    subprocess.run([*argv, "-an", "--", str(out)], check=True)
+    return out
