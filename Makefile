@@ -8,10 +8,10 @@ AUDIT_REQS := .cache/audit-requirements.txt
 # is numpy's exact compound expression: every part is permissive (DECISIONS #33).
 LICENSE_ALLOW := MIT License;MIT;BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Python Software Foundation License;PSF-2.0;ISC License (ISCL);MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0
 
-.PHONY: help sync hooks lint typecheck test security audit licenses secrets build guards check ci clean
+.PHONY: help sync hooks lint typecheck test security audit licenses secrets build guards check ci pr ship tag-phase clean
 
 help:
-	@grep -E '^[a-z]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
+	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
 
 sync: ## install the locked environment
 	$(UV) sync --locked
@@ -54,6 +54,23 @@ check: lint typecheck test security build guards ## the build: must be green to 
 ci: ## what CI runs
 	$(UV) sync --locked
 	$(MAKE) check
+
+# ---- per-feature flow (DECISIONS #48): one branch and one PR per feature, merged by GitHub when green
+BASE ?= main
+
+pr: check ## push this branch and open its PR (BASE=main by default); CI then runs
+	@test "$$(git branch --show-current)" != "main" || { echo "refusing: on main"; exit 1; }
+	git push -u origin HEAD
+	gh pr view >/dev/null 2>&1 || gh pr create --base $(BASE) --fill
+
+ship: ## after your approval: GitHub rebase-merges the PR the moment both CI jobs are green
+	gh pr merge --auto --rebase
+
+tag-phase: ## tag the merged phase locally: make tag-phase N=3 PR=2 (push the tag yourself)
+	@test -n "$(N)" -a -n "$(PR)" || { echo "usage: make tag-phase N=3 PR=2"; exit 1; }
+	@sha=$$(gh pr view $(PR) --json mergeCommit -q .mergeCommit.oid); \
+	test -n "$$sha" || { echo "PR $(PR) is not merged yet"; exit 1; }; \
+	git fetch -q origin main && git tag phase-$(N) $$sha && echo "tagged phase-$(N) at $$sha"
 
 clean:
 	rm -rf dist build .cache .coverage .mypy_cache .ruff_cache .pytest_cache .hypothesis
