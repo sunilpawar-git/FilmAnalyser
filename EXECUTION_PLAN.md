@@ -23,7 +23,7 @@ Builds on `README.md`, `DECISIONS.md`, `ACCEPTANCE.md`, `BACKLOG.md`. Scope is t
 ### CI/CD
 - **One definition of green:** CI runs the same `make check` as local. GitHub Actions, macOS + Linux matrix now; Windows is added when it becomes a goal. `uv` and ffmpeg are cached; ffmpeg is pinned.
 - **Pipeline order (fail fast):** lint + types -> unit tests -> integration tests -> security (bandit, pip-audit, gitleaks, licence check) -> build wheel.
-- **Branching:** trunk-based with short-lived feature branches; `main` is protected (merge only when CI is green, even when working alone). Conventional Commits drive the changelog and semantic version (`python-semantic-release` or equivalent).
+- **Branching:** trunk-based with short-lived feature branches, one branch and one PR per feature; `main` is protected (merge only when CI is green, even when working alone). Flow: `make pr`, then after approval `make ship`, then `make tag-phase` (DECISIONS #48). Conventional Commits drive the changelog and semantic version (`python-semantic-release` or equivalent).
 - **Nightly workflow:** slow tests that are too heavy for every push: real-clip smoke test, long-film memory test, benchmarks.
 - **Release workflow:** a `v*` tag runs the full suite, builds the wheel, generates the SBOM, and publishes the artifacts with a changelog. Installers (PyInstaller/Tauri, macOS notarisation) are post-MVP.
 - **Dependency updates:** Dependabot/Renovate PRs, gated by the same CI.
