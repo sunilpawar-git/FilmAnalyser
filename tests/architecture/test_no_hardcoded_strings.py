@@ -1,6 +1,7 @@
 """No user-facing text in cli/ or report/ code, or in templates: everything is a resource lookup."""
 
 import ast
+import re
 from collections.abc import Iterator
 from html.parser import HTMLParser
 from pathlib import Path
@@ -11,6 +12,14 @@ from tests.architecture._scan import PKG_ROOT, iter_files, make_package, parse
 SCOPES = ("cli", "report")
 EXEMPT_DIRS = {"resources"}  # the loaders themselves name their files and tables
 TECHNICAL = {"utf-8", "__main__", "r", "rb", "w", "wb"}  # not user-facing
+# Technical tokens are not user-facing: option flags, format specs and log formats, and dotted or
+# underscored identifiers (column keys, file and package names, argparse actions). Plain words
+# and sentences are still text and must come from strings.toml.
+_TECHNICAL_PATTERNS = (
+    re.compile(r"^--?[a-z][a-z-]*$"),  # -v, --out, --report
+    re.compile(r"^\.\d+[fge]$|^%\(\w+\)s$"),  # '.1f', '%(message)s'
+    re.compile(r"^[a-z][a-z0-9]*([._][a-z0-9]+)+$"),  # start_s, shot_cuts.cuts, report.html
+)
 LABEL_ATTRS = {"alt", "title", "aria-label", "placeholder"}
 
 
@@ -36,6 +45,10 @@ def _annotations(node: ast.AST) -> Iterator[ast.expr]:
     yield from (ann for ann in found if ann is not None)
 
 
+def _technical(text: str) -> bool:
+    return any(pattern.match(text) for pattern in _TECHNICAL_PATTERNS)
+
+
 def literal_violations(path: Path, keys: frozenset[str]) -> list[str]:
     tree = parse(path)
     skip = _skipped_nodes(tree)
@@ -44,7 +57,7 @@ def literal_violations(path: Path, keys: frozenset[str]) -> list[str]:
         if not (isinstance(node, ast.Constant) and isinstance(node.value, str)):
             continue
         text = node.value
-        if id(node) in skip or text in TECHNICAL or text in keys:
+        if id(node) in skip or text in TECHNICAL or text in keys or _technical(text):
             continue
         if any(ch.isalpha() for ch in text):
             bad.append(f"{path.name}:{node.lineno}: literal {text!r}")

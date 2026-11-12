@@ -1,7 +1,11 @@
-"""The registry is open/closed: a new extractor registers without touching existing modules."""
+"""The registry is open/closed: a new extractor is found by discovery without touching existing
+modules, and every shipped extractor emits exactly the features it declares."""
 
+import sys
+import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import get_type_hints
 
 import numpy as np
@@ -9,7 +13,7 @@ import pytest
 
 from filmanalyser.core.chunk import Chunk
 from filmanalyser.core.extractor import Extractor
-from filmanalyser.extractors.registry import REGISTRY, ExtractorRegistry
+from filmanalyser.extractors.registry import ExtractorRegistry, discover
 
 
 def _chunk() -> Chunk:
@@ -21,6 +25,7 @@ def _chunk() -> Chunk:
 class DummyExtractor:
     name: str = "dummy"
     version: int = 1
+    features: tuple[str, ...] = ("seen",)
 
     def extract(self, chunk: Chunk) -> Mapping[str, float]:
         return {"seen": float(len(chunk.core))}
@@ -66,6 +71,12 @@ def test_invalid_version_rejected(version: int) -> None:
         ExtractorRegistry().register(DummyExtractor(version=version))
 
 
+@pytest.mark.parametrize("features", [(), ("a", "a"), ("Bad",)])
+def test_invalid_feature_declaration_rejected(features: tuple[str, ...]) -> None:
+    with pytest.raises(ValueError, match="features"):
+        ExtractorRegistry().register(DummyExtractor(features=features))
+
+
 def test_unknown_name_raises() -> None:
     with pytest.raises(LookupError, match="nope"):
         ExtractorRegistry().get("nope")
@@ -77,11 +88,57 @@ def test_registries_are_independent() -> None:
     assert second.names() == ()
 
 
-def test_default_registry_starts_empty() -> None:
-    assert REGISTRY.names() == ()
+def test_protocol_contract_takes_a_chunk_and_declares_features() -> None:
+    """DECISIONS #25 narrowed `chunk` to Chunk; #49 adds the declared feature names."""
+    assert get_type_hints(Extractor.extract)["chunk"] is Chunk
+    assert "features" in vars(Extractor)  # declared on the protocol, so every extractor has it
 
 
-def test_protocol_contract_takes_a_chunk() -> None:
-    """DECISIONS #25: the Phase 1 `object` placeholder is narrowed to Chunk."""
-    hints = get_type_hints(Extractor.extract)
-    assert hints["chunk"] is Chunk
+def test_discovery_finds_the_shipped_extractors_in_name_order() -> None:
+    assert discover().names() == ("color", "shot_cuts")
+
+
+def test_helper_modules_are_not_extractors() -> None:
+    assert "letterbox" not in discover().names()
+
+
+def test_every_shipped_extractor_emits_exactly_its_declared_features() -> None:
+    for extractor in discover():
+        out = extractor.extract(_textured_chunk())
+        assert set(out) == set(extractor.features), extractor.name
+        assert all(np.isfinite(v) for v in out.values()), extractor.name
+
+
+def _textured_chunk() -> Chunk:
+    rng = np.random.default_rng(7)
+    frames = rng.integers(0, 256, size=(12, 18, 16, 3), dtype=np.uint8)
+    return Chunk(0, 0.0, 1.2, 10.0, frames, context_frames=0)
+
+
+def test_a_new_extractor_module_is_discovered_without_editing_existing_ones(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Open/closed, proven: a module dropped into a package is registered; nothing else changes."""
+    package = f"pluginpkg_{uuid.uuid4().hex}"
+    root = tmp_path / package
+    root.mkdir()
+    (root / "__init__.py").write_text("", encoding="utf-8")
+    (root / "zz_new.py").write_text(
+        "from dataclasses import dataclass\n"
+        "@dataclass(frozen=True)\n"
+        "class New:\n"
+        "    name = 'zz_new'\n"
+        "    version = 1\n"
+        "    features = ('one',)\n"
+        "    def extract(self, chunk):\n"
+        "        return {'one': 1.0}\n"
+        "EXTRACTOR = New()\n",
+        encoding="utf-8",
+    )
+    (root / "_helper.py").write_text("VALUE = 1\n", encoding="utf-8")  # no EXTRACTOR: ignored
+    monkeypatch.syspath_prepend(str(tmp_path))
+    try:
+        assert discover(package).names() == ("zz_new",)
+    finally:
+        for name in [m for m in sys.modules if m == package or m.startswith(package + ".")]:
+            del sys.modules[name]

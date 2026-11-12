@@ -15,6 +15,16 @@ PROBE_MAX_OUTPUT_BYTES = 1024 * 1024  # a probe answer is a few hundred bytes; m
 STORE_MAX_FILE_BYTES = 4 * 1024 * 1024
 HASH_BLOCK_BYTES = 1024 * 1024  # the input film is hashed in blocks this big, never loaded whole
 
+# Video features (SSOT; consumed by extractors/). Chosen against synthetic clips with known ground
+# truth (DECISIONS #57); any change is a new decision.
+CUT_DISTANCE = 0.40  # histogram distance between consecutive frames (0..1) that counts as a cut
+HIST_BINS = 16  # soft histogram bins per colour channel (a pixel splits between its two nearest)
+LETTERBOX_LUMA = 0.06  # a row darker than this (0..1, mean luma over the chunk) is a black bar
+LUMA_WEIGHTS = (0.2126, 0.7152, 0.0722)  # ITU-R BT.709 luma coefficients for R, G, B
+EXTRACT_BUDGET_FRACTION = (
+    0.25  # extraction may take this share of the film's duration (45 min / 3 h)
+)
+
 # The settings that decide what a chunk contains: part of the key a stored run is cached by.
 GEOMETRY_FIELDS = ("chunk_seconds", "overlap_seconds", "analysis_fps", "frame_width")
 

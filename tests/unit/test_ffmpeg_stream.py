@@ -10,7 +10,7 @@ import pytest
 
 from filmanalyser.core.config import STDERR_LIMIT_BYTES, Config
 from filmanalyser.core.errors import DecodeError
-from filmanalyser.media.ffmpeg_stream import decode_argv, stream_frames
+from filmanalyser.media.ffmpeg_stream import Seek, decode_argv, stream_frames
 
 CONFIG = Config(chunk_seconds=1.0, overlap_seconds=0.0, analysis_fps=10.0, frame_width=4)
 SIZE = (4, 2)  # width, height -> 24 bytes per rgb24 frame
@@ -41,17 +41,26 @@ def test_argv_is_a_list_with_a_file_protocol_input_and_no_audio() -> None:
 def test_argv_seeks_before_the_input_only_when_resuming() -> None:
     plain = decode_argv("ffmpeg", Path("/f.mp4"), CONFIG, SIZE)
     assert "-ss" not in plain
-    argv = decode_argv("ffmpeg", Path("/f.mp4"), CONFIG, SIZE, start_s=118.0)
+    argv = decode_argv("ffmpeg", Path("/f.mp4"), CONFIG, SIZE, Seek(start_s=118.0))
     assert argv[argv.index("-ss") + 1] == "118.0"
     assert argv.index("-ss") < argv.index("-i")  # input seeking: skipped film is never decoded
 
 
 def test_argv_applies_pts_normalisation_fps_and_scale() -> None:
-    argv = decode_argv("ffmpeg", Path("/f.mp4"), CONFIG, SIZE)
+    argv = decode_argv("ffmpeg", Path("/f.mp4"), CONFIG, SIZE, Seek(origin_s=0.5))
     vf = argv[argv.index("-vf") + 1]
-    assert vf.startswith("setpts=PTS-STARTPTS,")  # first frame is t=0, whatever the container says
+    assert vf.startswith(
+        "setpts=PTS-0.5/TB,"
+    )  # the stream's own start is removed, not the seek point
     assert "fps=10.0" in vf
     assert "scale=4:2" in vf
+
+
+def test_argv_keeps_source_timestamps_so_a_seek_does_not_rebase_them() -> None:
+    """DECISIONS #54: timestamps stay on the container clock; the grid ignores the seek point."""
+    argv = decode_argv("ffmpeg", Path("/f.mp4"), CONFIG, SIZE, Seek(5.0, 0.0))
+    assert argv.index("-copyts") < argv.index("-i")
+    assert argv.index("-copyts") < argv.index("-ss") < argv.index("-i")
 
 
 def test_frames_are_yielded_with_the_requested_shape(

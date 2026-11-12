@@ -14,6 +14,7 @@ import subprocess
 import threading
 import time
 from collections.abc import Generator, Iterator
+from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, cast
 
@@ -32,20 +33,38 @@ _DRAIN_READ = 4096
 _JOIN_SECONDS = 5.0
 
 
+@dataclass(frozen=True)
+class Seek:
+    """Where a decode starts (`start_s`, skipping the film before it) and the stream's own start
+    time (`origin_s`, from the probe). Both keep the grid anchored to film time (DECISIONS #54)."""
+
+    start_s: float = 0.0
+    origin_s: float = 0.0
+
+
+NO_SEEK = Seek()
+
+
 def decode_argv(
-    ffmpeg: str, path: Path, config: Config, size: tuple[int, int], start_s: float = 0.0
+    ffmpeg: str, path: Path, config: Config, size: tuple[int, int], seek: Seek = NO_SEEK
 ) -> list[str]:
     """The one place the ffmpeg command line is built. `-i` takes the next argument as its value
     (ffmpeg has no `--` for inputs: after it every argument is an output name), so the path is
-    made safe instead: absolute, `file:`-prefixed, protocols whitelisted. A resumed run seeks (input
-    seeking, before `-i`) so the film before `start_s` is never decoded."""
+    made safe instead: absolute, `file:`-prefixed, protocols whitelisted.
+
+    Timing (DECISIONS #54): the 12 fps grid must be anchored to the film's own clock. The stream's
+    start (`origin_s`, from the probe) is subtracted from the source timestamps. The first frame a
+    seek decodes lies between source frames, so re-anchoring to it (`PTS-STARTPTS`) moved the grid
+    and a resumed run sampled different frames. `-copyts` keeps those timestamps on the container's
+    clock, so the grid does not depend on where a seek lands.
+    """
     width, height = size
-    seek = ["-ss", str(start_s)] if start_s > 0 else []
+    skip = ["-ss", str(seek.start_s)] if seek.start_s > 0 else []
     video_filter = (
-        f"setpts=PTS-STARTPTS,fps={config.analysis_fps},scale={width}:{height}:flags=area"
+        f"setpts=PTS-{seek.origin_s}/TB,fps={config.analysis_fps},scale={width}:{height}:flags=area"
     )
     return [
-        ffmpeg, "-nostdin", "-v", "error", *seek,
+        ffmpeg, "-nostdin", "-v", "error", "-copyts", *skip,
         "-protocol_whitelist", "file", "-i", f"file:{path}",
         "-map", "0:v:0", "-an", "-sn", "-dn",
         "-vf", video_filter,
@@ -77,10 +96,10 @@ class _StderrTail:
 
 
 def stream_frames(
-    path: Path, config: Config, size: tuple[int, int], start_s: float = 0.0
+    path: Path, config: Config, size: tuple[int, int], seek: Seek = NO_SEEK
 ) -> Generator[Frames]:
-    """Yield decoded frames, shape (height, width, 3), from `start_s` until the film ends."""
-    argv = decode_argv(find_tool("ffmpeg"), path, config, size, start_s)
+    """Yield decoded frames, shape (height, width, 3), from `seek.start_s` until the film ends."""
+    argv = decode_argv(find_tool("ffmpeg"), path, config, size, seek)
     width, height = size
     frame_bytes = width * height * 3
     with subprocess.Popen(
@@ -142,6 +161,7 @@ def decode_chunks(
         "decode_start", film=path.name, width=size[0], height=size[1], fps=config.analysis_fps,
         start_chunk=start_chunk,
     )  # fmt: skip
-    frames = stream_frames(path, config, size, span.context_start / config.analysis_fps)
+    seek = Seek(span.context_start / config.analysis_fps, info.start_s)
+    frames = stream_frames(path, config, size, seek)
     chunks = chunk_frames(frames, config, (size[1], size[0]), start_chunk)
     yield from _timed(chunks, path.name)

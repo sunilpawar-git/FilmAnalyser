@@ -1,0 +1,63 @@
+# Nightly: the slow checks and the real-footage smoke test (DECISIONS #21, #53). Never a gate for a
+# pull request: `make check` is the gate.
+name: nightly
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  slow:
+    name: slow checks (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.12.17"
+          enable-cache: true
+      - name: Install ffmpeg (pinned, checksum-verified)
+        uses: ./.github/actions/setup-ffmpeg
+      - run: make nightly
+
+  real-clip:
+    name: real footage smoke test
+    if: ${{ vars.REAL_CLIP_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.12.17"
+          enable-cache: true
+      - name: Install ffmpeg (pinned, checksum-verified)
+        uses: ./.github/actions/setup-ffmpeg
+      - name: Fetch the clip and verify its checksum (the clip is never stored in the repo)
+        env:
+          CLIP_URL: ${{ vars.REAL_CLIP_URL }}
+          CLIP_SHA256: ${{ vars.REAL_CLIP_SHA256 }}
+        run: |
+          curl -sSfL --retry 3 "$CLIP_URL" -o "$RUNNER_TEMP/clip.mov"
+          echo "${CLIP_SHA256}  $RUNNER_TEMP/clip.mov" | sha256sum -c -
+      - name: Run the real-clip smoke test
+        env:
+          FILMANALYSER_REAL_CLIP: ${{ runner.temp }}/clip.mov
+        run: make real-clip

@@ -44,3 +44,8 @@ def tamper(path: Path, offset: int = 20) -> None:
     data = bytearray(path.read_bytes())
     data[offset] ^= 0xFF
     path.write_bytes(bytes(data))
+
+
+def tree(directory: Path) -> dict[str, bytes]:
+    """Every file of a store directory by name: what "byte-identical" is asserted over."""
+    return {p.name: p.read_bytes() for p in sorted(directory.iterdir())}

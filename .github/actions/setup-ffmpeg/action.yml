@@ -1,0 +1,75 @@
+# Composite action: the pinned ffmpeg and ffprobe for this runner, checksum-verified (DECISIONS
+# #38, #40, #58). ci.yml and nightly.yml both use it, so each pin exists exactly once here.
+name: setup-ffmpeg
+description: Install pinned, checksum-verified ffmpeg and ffprobe on Linux or macOS.
+
+runs:
+  using: composite
+  steps:
+    - name: Cache ffmpeg (Linux)
+      if: runner.os == 'Linux'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      env:
+        FFMPEG_VERSION: "6.0.1"
+        FFMPEG_LINUX_SHA256: "28268bf402f1083833ea269331587f60a242848880073be8016501d864bd07a5"
+      with:
+        path: ffmpeg.tar.xz
+        key: ffmpeg-${{ env.FFMPEG_VERSION }}-${{ env.FFMPEG_LINUX_SHA256 }}
+
+    - name: Install ffmpeg (Linux, pinned and checksum-verified)
+      if: runner.os == 'Linux'
+      shell: bash
+      env:
+        FFMPEG_VERSION: "6.0.1"
+        FFMPEG_LINUX_SHA256: "28268bf402f1083833ea269331587f60a242848880073be8016501d864bd07a5"
+      run: |
+        # Linux: the checksum is taken from a TLS download (no checksum is published for 6.0.1).
+        if [ ! -f ffmpeg.tar.xz ]; then
+          curl -sSfL --retry 5 "https://johnvansickle.com/ffmpeg/old-releases/ffmpeg-${FFMPEG_VERSION}-amd64-static.tar.xz" -o ffmpeg.tar.xz
+        fi
+        echo "${FFMPEG_LINUX_SHA256}  ffmpeg.tar.xz" | sha256sum -c -
+        sudo tar -xJf ffmpeg.tar.xz --strip-components=1 -C /usr/local/bin --wildcards '*/ffmpeg' '*/ffprobe'
+
+    - name: Cache ffmpeg (macOS)
+      if: runner.os == 'macOS'
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      env:
+        FFMPEG_MAC_BUILD: "1789931890_9.0.2"
+        FFMPEG_MAC_SHA256: "c8ed4c4e6978a03c485edbfe4e0a5dc2380f8a30bba5150531b31b094492d924"
+      with:
+        path: |
+          ffmpeg.zip
+          ffprobe.zip
+        key: ffmpeg-mac-${{ env.FFMPEG_MAC_BUILD }}-${{ env.FFMPEG_MAC_SHA256 }}
+
+    - name: Install ffmpeg (macOS, pinned and checksum-verified)
+      if: runner.os == 'macOS'
+      shell: bash
+      env:
+        FFMPEG_MAC_BUILD: "1789931890_9.0.2"
+        FFMPEG_MAC_SHA256: "c8ed4c4e6978a03c485edbfe4e0a5dc2380f8a30bba5150531b31b094492d924"
+        FFPROBE_MAC_SHA256: "fcbe839537485eaee7a7a8bc5cbc0f90d53617e80943e8a5b2e31cb851197ea6"
+      run: |
+        # macOS: the vendor's versioned build, checked against the sha256 the vendor publishes.
+        base="https://ffmpeg.martin-riedl.de/download/macos/arm64/${FFMPEG_MAC_BUILD}"
+        [ -f ffmpeg.zip ] || curl -sSfL --retry 5 "$base/ffmpeg.zip" -o ffmpeg.zip
+        [ -f ffprobe.zip ] || curl -sSfL --retry 5 "$base/ffprobe.zip" -o ffprobe.zip
+        echo "${FFMPEG_MAC_SHA256}  ffmpeg.zip" | shasum -a 256 -c -
+        echo "${FFPROBE_MAC_SHA256}  ffprobe.zip" | shasum -a 256 -c -
+        sudo mkdir -p /usr/local/bin
+        sudo unzip -o ffmpeg.zip ffmpeg -d /usr/local/bin
+        sudo unzip -o ffprobe.zip ffprobe -d /usr/local/bin
+        sudo chmod +x /usr/local/bin/ffmpeg /usr/local/bin/ffprobe
+
+    - name: Show and check the ffmpeg version
+      shell: bash
+      env:
+        FFMPEG_VERSION: "6.0.1"
+        FFMPEG_MAC_VERSION: "9.0.2"
+      run: |
+        expected="$FFMPEG_VERSION"
+        if [ "$RUNNER_OS" = "macOS" ]; then expected="$FFMPEG_MAC_VERSION"; fi
+        ffmpeg -version | head -1
+        ffprobe -version | head -1
+        ffmpeg -version | head -1 | grep -q "version ${expected}" \
+          || { echo "ffmpeg is not the pinned ${expected}" >&2; exit 1; }

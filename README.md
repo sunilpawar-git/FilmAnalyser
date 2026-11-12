@@ -33,17 +33,30 @@ mp4 --ffmpeg pipe--> 60s chunk --> extractors --> append to Parquet --> discard 
   ones; results from different inputs, extractor versions or settings are rejected, never mixed.
 
 ## Stack
-Python 3.11+, ffmpeg, OpenCV, librosa, ONNX Runtime, NumPy/pandas, `ruptures`, Parquet (`pyarrow`). FastAPI + web UI + Tauri packaging are post-MVP.
+Python 3.11+, ffmpeg, NumPy, Parquet (`pyarrow`), Jinja2 (report). OpenCV, librosa, ONNX Runtime and `ruptures` arrive with their phases; shot cuts and letterboxing use NumPy alone (DECISIONS #51). FastAPI + web UI + Tauri packaging are post-MVP.
 
 ## MVP metrics
 Shot cuts and average shot length, cut-rate curve, colour palette and brightness, loudness profile, speech/music/silence ratio, tension curve, act-break detection, flagged timestamps.
 
+## Usage
+```sh
+filmanalyser film.mp4 --out work/film        # writes work/film/report.html
+filmanalyser film.mp4 --out work/film -v     # also prints the structured progress events
+```
+Repeating a run with the same `--out` folder resumes at the first unfinished chunk. Exit codes:
+`0` success, `1` internal error, `2` invalid input or setting, `3` the film could not be decoded
+(or ffmpeg is missing), `5` the stored features are damaged or belong to another film. The report
+is one static HTML page (no scripts, no network); it shows the hard cuts per minute over the film.
+
 ## Development
 ```sh
-make sync    # locked environment (uv)
-make hooks   # pre-commit + Conventional Commits check
-make check   # the build: lint, mypy --strict, tests + coverage, security, wheel, guard self-test
+make sync      # locked environment (uv)
+make hooks     # pre-commit + Conventional Commits check
+make check     # the build: lint, mypy --strict, tests + coverage, security, wheel, guard self-test
+make nightly   # slow checks (long-film memory): run by the nightly workflow
+make real-clip # real-footage kill-and-resume test: FILMANALYSER_REAL_CLIP=/path/to/clip make real-clip
 ```
+The real-footage test never runs inside `make check` (DECISIONS #53); the clip stays outside the repo.
 ### Requirements
 - `uv`, `make`, `gitleaks`
 - **`ffmpeg` and `ffprobe` on `PATH`** (decoding and probing). Not a Python package, so install it

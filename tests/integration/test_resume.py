@@ -1,21 +1,17 @@
 """Kill-and-resume on a real subprocess: SIGKILL a worker mid-film, resume, and prove that the
 finished chunks were not decoded again and that the result equals an uninterrupted run."""
 
-import signal
-import subprocess
-import sys
-import threading
 from pathlib import Path
 
 import pytest
 
 from filmanalyser.core.errors import StorageError
+from filmanalyser.pipeline.runner import analyse
 from tests.fixtures.make_synthetic import make_clip
-from tests.integration._pipeline import run_film, tree
+from tests.fixtures.store import CONFIG, tree
+from tests.integration._kill import decoded, run_to_end, run_until_killed
 
-REPO = Path(__file__).resolve().parents[2]
 TOTAL = 12  # a 120 s film in 10 s chunks
-WATCHDOG_S = 120
 
 
 @pytest.fixture(scope="module")
@@ -27,52 +23,8 @@ def film(tmp_path_factory: pytest.TempPathFactory) -> Path:
 def reference(film: Path, tmp_path_factory: pytest.TempPathFactory) -> dict[str, bytes]:
     """The uninterrupted run everything else must equal."""
     directory = tmp_path_factory.mktemp("reference")
-    run_film(film, directory)
+    analyse(film, directory, CONFIG)
     return tree(directory)
-
-
-def start(film: Path, directory: Path, gate: int) -> subprocess.Popen[str]:
-    argv = [sys.executable, "-m", "tests.integration._resume_worker", str(film), str(directory)]
-    proc = subprocess.Popen(
-        [*argv, str(gate)],
-        cwd=REPO,
-        stdin=subprocess.PIPE,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-    )
-    watchdog = threading.Timer(WATCHDOG_S, proc.kill)  # a hung worker must fail, not hang
-    watchdog.daemon = True  # and a finished test must not wait for it
-    watchdog.start()
-    return proc
-
-
-def run_until_killed(film: Path, directory: Path, gate: int) -> list[str]:
-    """Run a worker until it has stored `gate` chunks, then SIGKILL it; return its output."""
-    proc = start(film, directory, gate)
-    assert proc.stdout is not None
-    lines: list[str] = []
-    for line in proc.stdout:
-        lines.append(line.strip())
-        if line.strip() == f"gate {gate}":
-            break
-    else:
-        pytest.fail(f"worker ended before the gate: {lines} {proc.communicate()[1]}")
-    proc.send_signal(signal.SIGKILL)
-    assert proc.wait() == -signal.SIGKILL  # killed for real, not exited
-    return lines
-
-
-def run_to_end(film: Path, directory: Path) -> list[str]:
-    proc = start(film, directory, 0)
-    out, err = proc.communicate(input="")
-    assert proc.returncode == 0, err
-    return out.split()
-
-
-def decoded(lines: list[str]) -> list[int]:
-    words = " ".join(lines).split()
-    return [int(words[i + 1]) for i, w in enumerate(words) if w == "decoded"]
 
 
 @pytest.mark.parametrize("gate", [1, 5, 11])
@@ -103,7 +55,7 @@ def test_killed_twice_still_converges(
 
 def test_a_kill_leaves_a_store_that_opens_cleanly(film: Path, tmp_path: Path) -> None:
     run_until_killed(film, tmp_path / "out", 5)
-    store = run_film(film, tmp_path / "out", on_stored=lambda _: None)  # resumes and finishes
+    store = analyse(film, tmp_path / "out", CONFIG)  # resumes and finishes
     assert store.complete and store.next_chunk == TOTAL
 
 
@@ -111,5 +63,5 @@ def test_resuming_with_a_different_film_is_rejected(film: Path, tmp_path: Path) 
     run_until_killed(film, tmp_path / "out", 2)
     other = make_clip(tmp_path / "other.mp4", seconds=120, size=(320, 180), fps=12)
     with pytest.raises(StorageError) as caught:
-        run_film(other, tmp_path / "out")
+        analyse(other, tmp_path / "out", CONFIG)
     assert caught.value.key == "error.storage.input_mismatch"
