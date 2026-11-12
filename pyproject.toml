@@ -12,6 +12,7 @@ license = "MIT"
 dependencies = [
     "jinja2>=3.1.6",
     "numpy>=2.4.6",
+    "onnxruntime==1.31.1",
     "pyarrow>=24",
 ]
 
@@ -78,7 +79,7 @@ ignore_missing_imports = true
 # ---------------------------------------------------------------- pytest
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = [".", "scripts"]  # the scripts import each other by file name
 addopts = "-ra --strict-markers --strict-config --cov=filmanalyser --cov-branch --cov-fail-under=90 --cov-report=term-missing:skip-covered"
 xfail_strict = true
 markers = [

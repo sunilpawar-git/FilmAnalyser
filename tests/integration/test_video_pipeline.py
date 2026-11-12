@@ -64,12 +64,17 @@ def test_precision_and_recall_hold_for_cuts_between_samples(
 
 
 def test_the_runner_stores_every_declared_feature_and_the_count_of_cuts(tmp_path: Path) -> None:
+    # The cut clip has no audio track, so the audio extractors are dropped (DECISIONS #64) and
+    # every other declared feature is stored.
     film = make_cut_clip(tmp_path / "cuts.mp4", SCENES, fps=12)
     store = analyse(film, tmp_path / "out", CONFIG)
     columns = store.read_columns()
     assert store.complete
     assert int(np.asarray(columns["shot_cuts.cuts"], dtype=np.float64).sum()) == 3
     for extractor in discover():
+        if extractor.needs_audio:
+            assert f"{extractor.name}.{extractor.features[0]}" not in columns
+            continue
         for feature in extractor.features:
             assert f"{extractor.name}.{feature}" in columns
 

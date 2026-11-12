@@ -6,9 +6,9 @@ RUN := $(UV) run --locked
 AUDIT_REQS := .cache/audit-requirements.txt
 # Permissive licences only, plus MPL-2.0 (file-level copyleft, dev tooling only). The last entry
 # is numpy's exact compound expression: every part is permissive (DECISIONS #33).
-LICENSE_ALLOW := MIT License;MIT;BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Python Software Foundation License;PSF-2.0;ISC License (ISCL);MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0
+LICENSE_ALLOW := MIT License;MIT;BSD License;3-Clause BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Python Software Foundation License;PSF-2.0;ISC License (ISCL);MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0
 
-.PHONY: help sync hooks lint typecheck test security audit licenses secrets build guards check ci nightly real-clip pr ship tag-phase clean
+.PHONY: help sync hooks lint typecheck test security audit licenses secrets build guards check ci nightly real-clip models pr ship tag-phase clean
 
 help:
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -58,6 +58,9 @@ ci: ## what CI runs
 # -s lets the BENCH record reach the nightly log (pytest otherwise captures passing output)
 nightly: ## slow checks (long-film memory, benchmarks): nightly workflow only
 	$(RUN) pytest -m slow --no-cov -s
+
+models: ## fetch the pinned Silero VAD model (setup only; the app never downloads)
+	$(RUN) python scripts/fetch_models.py
 
 real-clip: ## real footage smoke test: FILMANALYSER_REAL_CLIP=/path/to/clip.mov make real-clip
 	$(RUN) pytest -m real_clip --no-cov

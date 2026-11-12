@@ -1,6 +1,7 @@
 """The registry is open/closed: a new extractor is found by discovery without touching existing
 modules, and every shipped extractor emits exactly the features it declares."""
 
+import dataclasses
 import sys
 import uuid
 from collections.abc import Mapping
@@ -11,7 +12,8 @@ from typing import get_type_hints
 import numpy as np
 import pytest
 
-from filmanalyser.core.chunk import Chunk
+from filmanalyser.core.chunk import Audio, Chunk
+from filmanalyser.core.config import AUDIO_RATE, VOICE_WINDOW
 from filmanalyser.core.extractor import Extractor
 from filmanalyser.extractors.registry import ExtractorRegistry, discover
 
@@ -26,6 +28,7 @@ class DummyExtractor:
     name: str = "dummy"
     version: int = 1
     features: tuple[str, ...] = ("seen",)
+    needs_audio: bool = False
 
     def extract(self, chunk: Chunk) -> Mapping[str, float]:
         return {"seen": float(len(chunk.core))}
@@ -95,7 +98,7 @@ def test_protocol_contract_takes_a_chunk_and_declares_features() -> None:
 
 
 def test_discovery_finds_the_shipped_extractors_in_name_order() -> None:
-    assert discover().names() == ("color", "shot_cuts")
+    assert discover().names() == ("color", "loudness", "shot_cuts", "speech_music")
 
 
 def test_helper_modules_are_not_extractors() -> None:
@@ -104,7 +107,8 @@ def test_helper_modules_are_not_extractors() -> None:
 
 def test_every_shipped_extractor_emits_exactly_its_declared_features() -> None:
     for extractor in discover():
-        out = extractor.extract(_textured_chunk())
+        chunk = _audio_chunk() if extractor.needs_audio else _textured_chunk()
+        out = extractor.extract(chunk)
         assert set(out) == set(extractor.features), extractor.name
         assert all(np.isfinite(v) for v in out.values()), extractor.name
 
@@ -113,6 +117,17 @@ def _textured_chunk() -> Chunk:
     rng = np.random.default_rng(7)
     frames = rng.integers(0, 256, size=(12, 18, 16, 3), dtype=np.uint8)
     return Chunk(0, 0.0, 1.2, 10.0, frames, context_frames=0)
+
+
+def _audio_chunk() -> Chunk:
+    """The textured chunk with a noisy 16 kHz track and its voice probabilities (what the runner
+    attaches before audio extractors run)."""
+    chunk = _textured_chunk()
+    rng = np.random.default_rng(7)
+    samples = rng.uniform(-0.5, 0.5, size=(round(1.2 * AUDIO_RATE), 1)).astype(np.float32)
+    voice = np.full(len(samples) // VOICE_WINDOW, 0.2, dtype=np.float32)
+    audio = Audio(rate=AUDIO_RATE, start_s=0.0, samples=samples, voice=voice)
+    return dataclasses.replace(chunk, audio=audio)
 
 
 def test_a_new_extractor_module_is_discovered_without_editing_existing_ones(

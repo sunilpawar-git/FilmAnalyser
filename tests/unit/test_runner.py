@@ -10,7 +10,7 @@ from filmanalyser.core.chunk import Chunk
 from filmanalyser.core.config import Config
 from filmanalyser.core.errors import InputError
 from filmanalyser.extractors.registry import ExtractorRegistry
-from filmanalyser.pipeline.runner import schema_for, validate_for_pipeline
+from filmanalyser.pipeline.runner import schema_for, select_extractors, validate_for_pipeline
 
 
 @dataclass(frozen=True)
@@ -18,6 +18,7 @@ class Stub:
     name: str
     features: tuple[str, ...]
     version: int = 1
+    needs_audio: bool = False
 
     def extract(self, chunk: Chunk) -> Mapping[str, float]:
         return dict.fromkeys(self.features, 0.0)
@@ -63,3 +64,23 @@ def test_zero_overlap_is_refused_because_a_boundary_cut_would_be_missed() -> Non
         validate_for_pipeline(Config(overlap_seconds=0.0))
     assert caught.value.key == "error.input.bad_setting"
     assert caught.value.fields == {"name": "overlap_seconds"}
+
+
+def test_audio_extractors_are_dropped_for_a_film_without_audio() -> None:
+    registry = _registry(
+        Stub("shot_cuts", ("cuts",)), Stub("loudness", ("lufs",), needs_audio=True)
+    )
+    assert select_extractors(registry, has_audio=False).names() == ("shot_cuts",)
+
+
+def test_audio_extractors_are_kept_for_a_film_with_audio() -> None:
+    registry = _registry(
+        Stub("shot_cuts", ("cuts",)), Stub("loudness", ("lufs",), needs_audio=True)
+    )
+    assert select_extractors(registry, has_audio=True).names() == ("shot_cuts", "loudness")
+
+
+def test_dropping_audio_extractors_leaves_the_registry_it_was_given() -> None:
+    registry = _registry(Stub("loudness", ("lufs",), needs_audio=True))
+    select_extractors(registry, has_audio=False)
+    assert registry.names() == ("loudness",)

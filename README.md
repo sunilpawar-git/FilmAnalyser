@@ -55,6 +55,7 @@ make hooks     # pre-commit + Conventional Commits check
 make check     # the build: lint, mypy --strict, tests + coverage, security, wheel, guard self-test
 make nightly   # slow checks (long-film memory): run by the nightly workflow
 make real-clip # real-footage kill-and-resume test: FILMANALYSER_REAL_CLIP=/path/to/clip make real-clip
+make models   # fetch the pinned Silero VAD model (setup only; the app never downloads)
 ```
 The real-footage test never runs inside `make check` (DECISIONS #53); the clip stays outside the repo.
 ### Requirements
