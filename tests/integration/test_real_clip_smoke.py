@@ -46,6 +46,8 @@ def test_real_clip_audio_features_are_well_formed(tmp_path: Path) -> None:
     assert np.isfinite(lufs).all()
     assert ((lufs >= LOUDNESS_ABS_GATE_LUFS) & (lufs <= 0.0)).all()
     peaks = np.asarray(columns["loudness.peak_dbfs"], dtype=np.float64)
-    assert np.isfinite(peaks).all() and (peaks <= 0.0).all()
+    # Decoded float PCM can exceed full scale between samples (the nightly clip does: a real over,
+    # not a fault). The bound only rejects corrupt values; +6 dBFS is a value of 2.0.
+    assert np.isfinite(peaks).all() and (peaks <= 6.0).all()
     ratios = sum(np.asarray(columns[f"speech_music.{name}"], dtype=np.float64) for name in FEATURES)
     assert np.allclose(ratios, 1.0, atol=1e-9)

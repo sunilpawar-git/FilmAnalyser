@@ -16,6 +16,7 @@ from filmanalyser.media.audio import (
     decode_argv,
     decode_window,
     parse_audio_channels,
+    parse_audio_stream,
 )
 
 FILM = Path("film.mp4")  # a relative name: these functions only build argument lists
@@ -83,8 +84,9 @@ def test_mono_and_stereo_are_reported_as_they_are() -> None:
     assert parse_audio_channels(json.dumps({"streams": [{"channels": 2}]})) == 2
 
 
-def test_more_than_two_channels_are_downmixed_to_stereo() -> None:
-    assert parse_audio_channels(json.dumps({"streams": [{"channels": 6}]})) == 2
+def test_up_to_five_point_one_is_kept_and_more_is_capped_at_six() -> None:
+    assert parse_audio_channels(json.dumps({"streams": [{"channels": 6}]})) == 6
+    assert parse_audio_channels(json.dumps({"streams": [{"channels": 8}]})) == 6  # 7.1 is downmixed
 
 
 @pytest.mark.parametrize(
@@ -143,3 +145,15 @@ def test_a_short_track_is_padded_with_silence_and_a_long_one_is_cut() -> None:
 def test_a_torn_final_sample_is_dropped_not_misread() -> None:
     raw = np.array([0.25, 0.75], dtype=np.float32).tobytes() + b"\x01\x02"  # 2 bytes of a sample
     assert _fit(raw, count=3, channels=1)[:, 0].tolist() == [0.25, 0.75, 0.0]
+
+
+@pytest.mark.parametrize("start", ['"soon"', "null", "1e400"])
+def test_a_probe_start_time_that_is_not_a_finite_number_is_a_decode_error(start: str) -> None:
+    text = '{"streams": [{"channels": 2, "start_time": ' + start + "}]}"
+    with pytest.raises(DecodeError):
+        parse_audio_stream(text, name="film.mp4")
+
+
+def test_a_missing_start_time_means_the_track_starts_at_zero() -> None:
+    stream = parse_audio_stream(json.dumps({"streams": [{"channels": 2}]}))
+    assert stream is not None and stream.start_s == 0.0

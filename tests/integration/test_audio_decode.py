@@ -4,6 +4,7 @@ without audio is reported as such, and chunk audio lines up with chunk frames (o
 Ground truth is built into the clip: silence from 0 to 2 s, a 440 Hz tone from 2 to 4 s, silence
 after. A sample is one 16 kHz tick, so alignment is asserted to within two samples (125 us)."""
 
+import subprocess
 from pathlib import Path
 
 import numpy as np
@@ -14,7 +15,7 @@ from filmanalyser.core.config import AUDIO_RATE, Config
 from filmanalyser.core.errors import DecodeError
 from filmanalyser.media.audio import audio_channels, decode_window
 from filmanalyser.media.ffmpeg_stream import decode_chunks
-from tests.fixtures.make_synthetic import make_av_clip, make_silent_clip
+from tests.fixtures.make_synthetic import av_clip_argv, make_av_clip, make_silent_clip
 
 TONE = "0.5*sin(2*PI*440*t)*between(t\\,2\\,4)"  # 440 Hz from 2 s to 4 s, silence elsewhere
 TOLERANCE_SAMPLES = 2
@@ -93,3 +94,16 @@ def test_a_file_that_is_not_media_fails_the_audio_decode(tmp_path: Path) -> None
     with pytest.raises(DecodeError) as info:
         decode_window(not_media, 0.0, 1.0, 1)
     assert info.value.key == "error.decode.audio_failed"
+
+
+def test_five_point_one_keeps_six_channels_in_their_order(tmp_path: Path) -> None:
+    """A 5.1 track: the tone on the front-left channel only. Six channels come back, front left
+    carries the tone, and the LFE channel (index 3) stays silent (DECISIONS #68)."""
+    expr = f"{TONE}|0*t|0*t|0*t|0*t|0*t"
+    out = tmp_path / "surround.mp4"
+    subprocess.run(av_clip_argv(out, 4.0, expr, layout="5.1"), check=True)
+    assert audio_channels(out) == 6
+    window = decode_window(out, start_s=1.5, duration_s=2.0, channels=6)
+    assert window.shape[1] == 6
+    assert float(np.max(np.abs(window[:, 0]))) > 0.1  # front left has the tone
+    assert float(np.max(np.abs(window[:, 3]))) < 1e-4  # LFE is silent

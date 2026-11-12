@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from filmanalyser.core.chunk import frames_for
+from filmanalyser.core.chunk import MAX_AUDIO_CHANNELS, frames_for
 from filmanalyser.core.errors import InputError
 
 # Security bounds on external tools (SSOT; consumed by media/). Not per-run settings.
@@ -30,7 +30,7 @@ EXTRACT_BUDGET_FRACTION = (
 # Audio features (SSOT; consumed by media/ and extractors/). Chosen against synthetic clips with
 # known ground truth (DECISIONS #60). Audio is decoded at AUDIO_RATE: Silero VAD's rate.
 AUDIO_RATE = 16000  # Hz the decoder resamples to (BS.1770 specifies 48 kHz; see DECISIONS #61)
-AUDIO_MAX_CHANNELS = 2  # stereo at most; a multichannel mix is downmixed by ffmpeg
+AUDIO_MAX_CHANNELS = MAX_AUDIO_CHANNELS  # up to 5.1 natively (DECISIONS #68); more is downmixed
 VOICE_WINDOW = 512  # samples per voice decision (32 ms at 16 kHz): the Silero window size
 VOICE_CONTEXT = 64  # samples of the previous window the model reads with each window (Silero v5+)
 SPEECH_PROB = 0.5  # voice probability at or above which a window is speech

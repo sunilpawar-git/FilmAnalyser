@@ -66,7 +66,7 @@ def test_audio_samples_are_read_only_and_the_callers_array_is_not_frozen() -> No
     [
         (0, (10, 1), np.float32),  # rate must be positive
         (AUDIO_RATE, (10,), np.float32),  # samples must be 2-D (frames, channels)
-        (AUDIO_RATE, (10, 3), np.float32),  # mono or stereo only
+        (AUDIO_RATE, (10, 7), np.float32),  # at most 5.1 (six channels)
         (AUDIO_RATE, (10, 1), np.float64),  # float32 is the one decoder format
         (AUDIO_RATE, (0, 1), np.float32),  # at least one sample
     ],

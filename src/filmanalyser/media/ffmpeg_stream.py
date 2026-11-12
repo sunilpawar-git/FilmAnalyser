@@ -152,12 +152,14 @@ def decode_chunks(
     config: Config,
     start_chunk: int = 0,
     channels: int | None = None,
+    audio_start_s: float = 0.0,
 ) -> Iterator[Chunk]:
     """Validate, probe and stream a film as overlapping chunks (the Phase 2 entry point).
 
     `start_chunk` resumes a run: chunks before it are not decoded (only the overlap that chunk
     needs as context is), and the chunks that follow are identical to an uninterrupted run's.
-    `channels` (from `media.audio.audio_channels`) asks for each chunk's audio as well (Phase 5)."""
+    `channels` asks for each chunk's audio as well (Phase 5). `audio_start_s` is the audio track's
+    start time on the container clock; the picture's is probed here (DECISIONS #67)."""
     path = validate_input_path(raw_path)
     info = probe_video(path)
     size = info.scaled_size(config.frame_width)
@@ -170,5 +172,5 @@ def decode_chunks(
     frames = stream_frames(path, config, size, seek)
     chunks = chunk_frames(frames, config, (size[1], size[0]), start_chunk)
     if channels is not None:
-        chunks = attach_audio(chunks, path, channels)
+        chunks = attach_audio(chunks, path, channels, info.start_s, audio_start_s)
     yield from _timed(chunks, path.name)
