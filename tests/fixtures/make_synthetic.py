@@ -125,7 +125,9 @@ def av_clip_argv(
         "ffmpeg", "-v", "error", "-y", *_av_source(seconds, size, fps),
         "-f", "lavfi", "-i", audio,
         *VIDEO_ENCODE, "-g", str(fps * 2), "-c:a", "pcm_s16le", "-shortest",
-        "--", str(out),
+        # QuickTime, not MP4: MP4 cannot hold PCM on the ffmpeg 6.0 that CI pins (its muxer
+        # rejects pcm_s16le); QuickTime carries it on every version. The name stays .mp4.
+        "-f", "mov", "--", str(out),
     ]  # fmt: skip
 
 
