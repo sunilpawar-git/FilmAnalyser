@@ -82,6 +82,11 @@ No other tech debt was found. Nothing is hidden: the open items are in the table
 ## Decisions added (`DECISIONS.md` #59 to #66)
 59 licence allowlist name for protobuf · 60 per-chunk audio decode · 61 loudness at 16 kHz, sample peak · 62 Silero model vendored in the package, verified, fetched only by `make models` · 63 speech, music and silence labels and thresholds · 64 needs_audio and video-only films · 65 voice state per window · 66 reference arithmetic and ring-out.
 
+## CI (PR #7)
+
+- First run (head `6fef07d`): macOS green; Ubuntu failed on the synthetic audio fixture (MP4 rejects PCM on ffmpeg 6.0.1), recorded as debt item 17.
+- Fix in `c17e3b8`. Run 43241830014 on head `3e4339e`: `make check (macos-latest)` and `make check (ubuntu-latest)` both green.
+
 ## Build confirmation: raw `make check` output (ANSI stripped)
 
 ```text
