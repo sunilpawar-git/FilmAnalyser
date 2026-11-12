@@ -65,12 +65,8 @@ def _loudness(energy: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
     return LOUDNESS_OFFSET_LU + 10 * np.log10(np.maximum(energy, _TINY))
 
 
-def integrated_lufs(weighted: npt.NDArray[np.float64], core_offset: int, rate: int) -> float:
-    """Gated integrated loudness of the core of a K-weighted window (`core_offset` samples in)."""
-    block = max(1, round(LOUDNESS_BLOCK_S * rate))
-    hop = max(1, round(LOUDNESS_HOP_S * rate))
-    weights = channel_weights(weighted.shape[1])
-    energy = block_energies(weighted[core_offset:], block, hop, weights)
+def gated_lufs(energy: npt.NDArray[np.float64]) -> float:
+    """BS.1770 gating over block energies (weighted mean squares): absolute gate, then relative."""
     loud = _loudness(energy)
     passed = loud > LOUDNESS_ABS_GATE_LUFS
     if not passed.any():
@@ -78,6 +74,14 @@ def integrated_lufs(weighted: npt.NDArray[np.float64], core_offset: int, rate: i
     relative = float(_loudness(np.array([energy[passed].mean()]))[0]) + LOUDNESS_REL_GATE_LU
     kept = passed & (loud > relative)
     return float(_loudness(np.array([energy[kept].mean()]))[0])
+
+
+def integrated_lufs(weighted: npt.NDArray[np.float64], core_offset: int, rate: int) -> float:
+    """Gated integrated loudness of the core of a K-weighted window (`core_offset` samples in)."""
+    block = max(1, round(LOUDNESS_BLOCK_S * rate))
+    hop = max(1, round(LOUDNESS_HOP_S * rate))
+    weights = channel_weights(weighted.shape[1])
+    return gated_lufs(block_energies(weighted[core_offset:], block, hop, weights))
 
 
 def peak_dbfs(core: npt.NDArray[np.float32]) -> float:
