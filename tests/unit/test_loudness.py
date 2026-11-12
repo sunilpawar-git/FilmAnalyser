@@ -13,7 +13,12 @@ from filmanalyser.core.config import AUDIO_RATE, LOUDNESS_ABS_GATE_LUFS, PEAK_FL
 from filmanalyser.core.errors import InputError
 from filmanalyser.core.extractor import Extractor
 from filmanalyser.extractors._kweighting import Biquad, biquads, k_weight, pre_filter, rlb_filter
-from filmanalyser.extractors.loudness import EXTRACTOR, integrated_lufs, peak_dbfs
+from filmanalyser.extractors.loudness import (
+    EXTRACTOR,
+    integrated_lufs,
+    peak_dbfs,
+    true_peak_dbfs,
+)
 
 RATE = AUDIO_RATE
 TOLERANCE_LU = 0.1
@@ -173,14 +178,14 @@ def _chunk(samples: np.ndarray, context_s: float = 0.0) -> Chunk:
 def test_the_extractor_is_registered_as_needing_audio() -> None:
     assert isinstance(EXTRACTOR, Extractor)
     assert EXTRACTOR.name == "loudness"
-    assert EXTRACTOR.features == ("integrated_lufs", "peak_dbfs")
+    assert EXTRACTOR.features == ("integrated_lufs", "peak_dbfs", "true_peak_dbfs")
     assert EXTRACTOR.needs_audio is True
 
 
 def test_extract_returns_both_features_for_the_core_window() -> None:
     chunk = _chunk(_sine(4.0, 0.5), context_s=0.0)
     out = EXTRACTOR.extract(chunk)
-    assert set(out) == {"integrated_lufs", "peak_dbfs"}
+    assert set(out) == {"integrated_lufs", "peak_dbfs", "true_peak_dbfs"}
     assert out["integrated_lufs"] == pytest.approx(_expected(0.5), abs=TOLERANCE_LU)
     assert out["peak_dbfs"] == pytest.approx(-6.02, abs=0.01)
 
@@ -190,3 +195,64 @@ def test_extract_refuses_a_chunk_without_audio() -> None:
     chunk = Chunk(index=0, start_s=0.0, end_s=1.0, fps=2.0, frames=frames, context_frames=0)
     with pytest.raises(InputError, match="audio"):
         EXTRACTOR.extract(chunk)
+
+
+# ---- surround weighting (BS.1770-4 channel weights, DECISIONS #68) ----------------------
+
+
+def _five_point_one(channel: int, amplitude: float = 0.5, seconds: float = 10.0) -> np.ndarray:
+    """A 1 kHz tone on one channel of a 5.1 mix (order L R C LFE Ls Rs), silence elsewhere."""
+    out = np.zeros((round(seconds * RATE), 6), dtype=np.float32)
+    out[:, channel] = _sine(seconds, amplitude)[:, 0]
+    return out
+
+
+def test_a_surround_channel_counts_one_and_a_half_db_louder_than_a_front_one() -> None:
+    front = _lufs(_five_point_one(0))
+    surround = _lufs(_five_point_one(4))
+    assert surround - front == pytest.approx(10 * np.log10(1.41), abs=TOLERANCE_LU)
+
+
+def test_the_lfe_channel_does_not_count() -> None:
+    assert _lufs(_five_point_one(3)) == LOUDNESS_ABS_GATE_LUFS
+
+
+# ---- true peak (4x oversampled, DECISIONS #68) ------------------------------------------
+
+
+def _phase_sine(freq: float, phase: float, seconds: float = 0.5) -> np.ndarray:
+    t = np.arange(round(seconds * RATE)) / RATE
+    return np.sin(2 * np.pi * freq * t + phase).astype(np.float32)
+
+
+def test_true_peak_finds_the_crest_that_falls_between_samples() -> None:
+    # 4 kHz at 45 degrees: the sampled peak is 0.707 (-3.01 dBFS) but the waveform reaches 1.0
+    x = _phase_sine(4000.0, np.pi / 4)
+    assert peak_dbfs(x[:, None]) == pytest.approx(-3.01, abs=0.01)
+    assert true_peak_dbfs(x[:, None], 0, RATE) == pytest.approx(0.0, abs=0.2)
+
+
+def test_true_peak_is_never_below_the_sample_peak() -> None:
+    rng = np.random.default_rng(3)
+    noise = (0.4 * rng.standard_normal((RATE, 2))).astype(np.float32)
+    assert true_peak_dbfs(noise, 0, RATE) >= peak_dbfs(noise) - 1e-9
+
+
+def test_true_peak_of_silence_is_the_floor() -> None:
+    assert true_peak_dbfs(np.zeros((1000, 1), np.float32), 0, RATE) == PEAK_FLOOR_DBFS
+
+
+def test_true_peak_counts_only_the_core() -> None:
+    # a loud context followed by a silent core: the core only sees the interpolator's ring-out from
+    # the last loud samples (well below the context's own 0 dBFS), and a loud core reads 0 dBFS
+    loud_context = _phase_sine(4000.0, np.pi / 4, seconds=0.5)
+    quiet_core = np.zeros_like(loud_context)
+    window = np.concatenate([loud_context, quiet_core])[:, None]
+    assert true_peak_dbfs(window, len(loud_context), RATE) < -20.0
+    loud_core = np.concatenate([quiet_core, loud_context])[:, None]
+    assert true_peak_dbfs(loud_core, len(quiet_core), RATE) == pytest.approx(0.0, abs=0.2)
+
+
+def test_true_peak_of_an_empty_core_is_the_floor() -> None:
+    window = _phase_sine(4000.0, np.pi / 4)[:, None]
+    assert true_peak_dbfs(window, core_offset=len(window), rate=RATE) == PEAK_FLOOR_DBFS

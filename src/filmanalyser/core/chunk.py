@@ -17,6 +17,7 @@ from filmanalyser.core.errors import InputError
 
 Frames = npt.NDArray[np.uint8]
 Samples = npt.NDArray[np.float32]
+MAX_AUDIO_CHANNELS = 6  # 5.1 at most: BS.1770's surround weighting needs the channel order
 
 
 def _bad(name: str) -> InputError:
@@ -68,9 +69,9 @@ def _locked(array: npt.NDArray[Any]) -> npt.NDArray[Any]:
 class Audio:
     """PCM for the same window as a chunk's frames (it starts at the first frame's film time).
 
-    `samples` is (count, channels), float32 in [-1, 1], mono or stereo, at `rate` Hz. `voice`, when
-    the pipeline has run the voice detector, holds one speech probability (0..1) per consecutive
-    block of samples, starting at the window's first sample.
+    `samples` is (count, channels), float32 in [-1, 1], one to six channels, at `rate` Hz. `voice`,
+    when the pipeline has run the voice detector, holds one speech probability (0..1) per
+    consecutive block of samples, starting at the window's first sample.
     """
 
     rate: int
@@ -82,7 +83,7 @@ class Audio:
         samples = self.samples
         if self.rate <= 0 or samples.ndim != 2 or samples.dtype != np.float32:
             raise _bad("audio")
-        if not 1 <= samples.shape[1] <= 2 or len(samples) == 0:
+        if not 1 <= samples.shape[1] <= MAX_AUDIO_CHANNELS or len(samples) == 0:
             raise _bad("audio")
         if not np.isfinite(samples).all():
             raise _bad("audio")

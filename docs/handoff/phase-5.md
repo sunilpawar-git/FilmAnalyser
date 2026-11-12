@@ -250,3 +250,25 @@ tests/integration/test_real_clip_smoke.py ..                             [100%]
 
 ====================== 2 passed, 606 deselected in 46.34s ======================
 ```
+
+## Follow-up: open items (branch `feat/phase-5-open-items`)
+
+Requested: address all open items. Status per item:
+
+| Item | Status | What was done | Evidence |
+|---|---|---|---|
+| P5-4 Audio/video alignment | **Closed** | The audio window follows the container clock. The picture's start and the track's start are probed; a track that starts late gets a silent lead (DECISIONS #67). The first version of this fix was wrong (it shifted the seek); the tests caught it and the design was corrected | `tests/integration/test_audio_offset.py` (5 tests, incl. the control that shows the old behaviour puts the tone 0.5 s early) |
+| P5-3 Loudness | **Narrowed, still open** | Surround (5.1) weighting and true peak are implemented (DECISIONS #68). True peak reads 0.36 dB low on the local clip because audio is decoded at 16 kHz | `test_loudness.py` (surround: +1.49 dB for a surround channel, LFE excluded; true peak: 4 kHz at 45 degrees within 0.2 dB of 0 dBFS). Real clip: true peak -0.66 dBFS against ebur128 -0.3 dBFS |
+| P5-5 Nightly real-clip job | **Ran; found a defect in my assertion; fixed; re-run pending merge** | The first post-merge nightly (run 43245241801) failed `peak_dbfs <= 0`. Decoded float PCM can exceed full scale, so the assertion was wrong; the bound is now +6 dBFS (DECISIONS #69) | Local real-clip run after the fix: 2 passed. The nightly is re-run after merge |
+| P5-1 Speech on real dialogue | **Blocked on input** | Nothing new to measure: no labelled real dialogue is in the repo, and I cannot label speech by ear | Needs labels from you (see below) |
+| P5-2 Music label | **Blocked on input** | Same: no labelled real music. The heuristic is unchanged | Needs labels from you (see below) |
+| P4-4 Real-footage cut accuracy (Phase 8 item) | **Blocked on input** | No hand-labelled cuts exist for the local clip | Needs labels from you |
+| P4-3 Fades and dissolves (Phase 8 item) | **Not started** | It is a new detector with its own synthetic ground truth. It belongs to Phase 8 by the plan, and I have not started it in this follow-up | Pending in EXECUTION_PLAN |
+
+### What I need from you to close the blocked items
+1. Three familiar films (or excerpts, a few minutes each) with hand labels: speech spans, music spans and cut times. A simple text file of start and end seconds per label is enough. Without labels, P5-1, P5-2 and P4-4 cannot be measured honestly.
+2. For P5-3, the `ebur128` readings of the same three films (`ffmpeg -i film -af ebur128=peak=true -f null -`), so I can compare full-film loudness.
+3. Once the 48 kHz true-peak decode is built, the same films show whether the 0.36 dB bias is gone.
+
+### Decisions added in this follow-up
+67 audio/picture alignment on the container clock · 68 surround weights and true peak · 69 over-full-scale decoded values

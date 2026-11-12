@@ -10,7 +10,7 @@ from filmanalyser.core.config import Config
 from filmanalyser.core.errors import InputError
 from filmanalyser.core.events import log_event
 from filmanalyser.extractors.registry import ExtractorRegistry, discover
-from filmanalyser.media.audio import audio_channels
+from filmanalyser.media.audio import AudioStream, audio_stream
 from filmanalyser.media.ffmpeg_stream import decode_chunks
 from filmanalyser.media.paths import validate_input_path
 from filmanalyser.media.vad import VoiceDetector, attach_voice
@@ -41,12 +41,16 @@ def select_extractors(registry: ExtractorRegistry, has_audio: bool) -> Extractor
     return chosen
 
 
-def chunk_stream(path: Path, config: Config, start: int, channels: int | None) -> Iterator[Chunk]:
+def chunk_stream(
+    path: Path, config: Config, start: int, audio: AudioStream | None
+) -> Iterator[Chunk]:
     """The decoded chunks of a run. With audio, each chunk also carries its audio and speech
     probabilities (the voice model is loaded once for the run and verified before use)."""
-    chunks = decode_chunks(path, config, start_chunk=start, channels=channels)
-    if channels is None:
-        return chunks
+    if audio is None:
+        return decode_chunks(path, config, start_chunk=start)
+    chunks = decode_chunks(
+        path, config, start_chunk=start, channels=audio.channels, audio_start_s=audio.start_s
+    )
     return attach_voice(chunks, VoiceDetector.load())
 
 
@@ -78,14 +82,14 @@ def analyse(
     validate_for_pipeline(settings)
     path = validate_input_path(film)
     registry = discover()
-    channels = audio_channels(path) if any(e.needs_audio for e in registry) else None
-    active = select_extractors(registry, has_audio=channels is not None)
+    audio = audio_stream(path) if any(e.needs_audio for e in registry) else None
+    active = select_extractors(registry, has_audio=audio is not None)
     schema = schema_for(active)
     key = RunKey(sha256_file(path), schema.version, settings.geometry())
     store = FeatureStore.open(out, schema, key)
     log_event("run_start", film=path.name, next_chunk=store.next_chunk)
     if not store.complete:
-        for chunk in chunk_stream(path, settings, store.next_chunk, channels):
+        for chunk in chunk_stream(path, settings, store.next_chunk, audio):
             if on_decoded is not None:
                 on_decoded(chunk.index)
             outputs = extract_chunk(active, chunk)

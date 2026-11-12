@@ -8,7 +8,7 @@ from time import perf_counter
 
 from filmanalyser.core.config import EXTRACT_BUDGET_FRACTION, Config
 from filmanalyser.extractors.registry import discover
-from filmanalyser.media.audio import audio_channels
+from filmanalyser.media.audio import audio_stream
 from filmanalyser.pipeline.runner import chunk_stream, extract_chunk
 from tests.fixtures.make_synthetic import make_clip
 
@@ -19,7 +19,7 @@ def test_every_chunk_is_extracted_within_the_time_budget(tmp_path: Path) -> None
     film = make_clip(tmp_path / "budget.mp4", seconds=120, size=(320, 180), fps=12)
     registry = discover()
     # the chunks a real run extracts: audio and voice included, decoded before any timing starts
-    chunks = list(chunk_stream(film, CONFIG, 0, audio_channels(film)))
+    chunks = list(chunk_stream(film, CONFIG, 0, audio_stream(film)))
     assert len(chunks) == 4
     for chunk in chunks:
         began = perf_counter()

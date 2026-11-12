@@ -16,6 +16,7 @@ import json
 import math
 import subprocess
 from collections.abc import Iterable, Iterator
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -41,16 +42,35 @@ def _bad_window() -> InputError:
 
 
 def audio_probe_argv(ffprobe: str, path: Path) -> list[str]:
-    """The first audio stream's channel count, as JSON. The path follows `--`."""
+    """The first audio stream's channel count and start time, as JSON. The path follows `--`."""
     return [
         ffprobe, "-v", "error", "-select_streams", "a:0",
-        "-show_entries", "stream=channels", "-of", "json", "--", str(path),
+        "-show_entries", "stream=channels,start_time", "-of", "json", "--", str(path),
     ]  # fmt: skip
 
 
-def parse_audio_channels(text: str, name: str = "") -> int | None:
-    """None when the film has no audio stream; else its channel count, at most AUDIO_MAX_CHANNELS
-    (a multichannel track is downmixed by ffmpeg)."""
+@dataclass(frozen=True)
+class AudioStream:
+    """The film's first audio track: its channel count (at most AUDIO_MAX_CHANNELS) and the
+    time its first sample sits on the container's clock (its start offset, often 0)."""
+
+    channels: int
+    start_s: float
+
+
+def _start_time(stream: dict[str, Any], name: str) -> float:
+    raw = stream.get("start_time", 0.0)
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        raise DecodeError(key="error.decode.probe_failed", name=name) from None
+    if not math.isfinite(value):
+        raise DecodeError(key="error.decode.probe_failed", name=name)
+    return value
+
+
+def parse_audio_stream(text: str, name: str = "") -> AudioStream | None:
+    """None when the film has no audio stream; else its channels and start offset."""
     try:
         data: Any = json.loads(text)
         streams = data["streams"]
@@ -60,14 +80,20 @@ def parse_audio_channels(text: str, name: str = "") -> int | None:
         raise DecodeError(key="error.decode.probe_failed", name=name)
     if not streams:
         return None
-    channels = streams[0].get("channels") if isinstance(streams[0], dict) else None
+    stream = streams[0] if isinstance(streams[0], dict) else {}
+    channels = stream.get("channels")
     if not isinstance(channels, int) or isinstance(channels, bool) or channels < 1:
         raise DecodeError(key="error.decode.probe_failed", name=name)
-    return min(channels, AUDIO_MAX_CHANNELS)
+    return AudioStream(min(channels, AUDIO_MAX_CHANNELS), _start_time(stream, name))
 
 
-def audio_channels(path: Path) -> int | None:
-    """Channels of the film's first audio track (1 or 2), or None when it has no audio."""
+def parse_audio_channels(text: str, name: str = "") -> int | None:
+    stream = parse_audio_stream(text, name)
+    return None if stream is None else stream.channels
+
+
+def audio_stream(path: Path) -> AudioStream | None:
+    """The film's first audio track (channels, start offset), or None when it has no audio."""
     argv = audio_probe_argv(find_tool("ffprobe"), path)
     try:
         done = subprocess.run(
@@ -82,7 +108,13 @@ def audio_channels(path: Path) -> int | None:
     if done.returncode != 0 or len(done.stdout) > PROBE_MAX_OUTPUT_BYTES:
         detail = scrub_stderr(done.stderr, path, STDERR_LIMIT_BYTES)
         raise DecodeError(detail, key="error.decode.probe_failed", name=path.name)
-    return parse_audio_channels(done.stdout.decode("utf-8", errors="replace"), path.name)
+    return parse_audio_stream(done.stdout.decode("utf-8", errors="replace"), path.name)
+
+
+def audio_channels(path: Path) -> int | None:
+    """Channels of the film's first audio track (1 or 2), or None when it has no audio."""
+    stream = audio_stream(path)
+    return None if stream is None else stream.channels
 
 
 def decode_argv(
@@ -133,9 +165,38 @@ def decode_window(path: Path, start_s: float, duration_s: float, channels: int) 
     return _fit(done.stdout, count, channels)
 
 
-def attach_audio(chunks: Iterable[Chunk], path: Path, channels: int) -> Iterator[Chunk]:
-    """Each chunk with its audio window: the same span as its frames, overlap included."""
+def _window(
+    path: Path, container_start_s: float, audio_start_s: float, duration_s: float, channels: int
+) -> Samples:
+    """`duration_s` of audio starting at `container_start_s` on the container clock (where the
+    picture's film time 0 is shifted by the picture's own start). A track that begins after that
+    point (`audio_start_s`) leaves a lead of silence: ffmpeg's seek works on the container clock,
+    so nothing before the track's first sample exists to decode."""
+    count = max(1, round(duration_s * AUDIO_RATE))
+    lead = min(count, round(max(0.0, audio_start_s - container_start_s) * AUDIO_RATE))
+    out = np.zeros((count, channels), dtype=np.float32)
+    if count > lead:
+        decode_from = container_start_s + lead / AUDIO_RATE
+        out[lead:] = decode_window(path, decode_from, (count - lead) / AUDIO_RATE, channels)
+    return out
+
+
+def attach_audio(
+    chunks: Iterable[Chunk],
+    path: Path,
+    channels: int,
+    picture_start_s: float = 0.0,
+    audio_start_s: float = 0.0,
+) -> Iterator[Chunk]:
+    """Each chunk with its audio window: the same span as its frames, overlap included.
+
+    Film time t is container time `picture_start_s + t` (the picture's own start is removed by the
+    decoder). The audio track's first sample is at container time `audio_start_s`. Both times share
+    the container clock, so sound and picture stay aligned whatever the two streams' starts are
+    (DECISIONS #67)."""
     for chunk in chunks:
-        start = chunk.first_frame_s
-        samples = decode_window(path, start, chunk.end_s - start, channels)
-        yield dataclasses.replace(chunk, audio=Audio(AUDIO_RATE, start, samples))
+        film_start = chunk.first_frame_s
+        samples = _window(
+            path, picture_start_s + film_start, audio_start_s, chunk.end_s - film_start, channels
+        )
+        yield dataclasses.replace(chunk, audio=Audio(AUDIO_RATE, film_start, samples))
