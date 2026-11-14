@@ -101,3 +101,47 @@ def test_speech_is_labelled_speech_by_the_classifier(detector: VoiceDetector) ->
     out = features_for(mono, detector.probabilities(mono.astype(np.float32)), core_offset=0)
     assert out["speech_ratio"] > 0.85
     assert out["silence_ratio"] < 0.15  # the pauses between sentences are silence (measured 0.09)
+
+
+# ---- 5.1: the voice detector hears the centre channel (DECISIONS #86) ------------------------
+
+
+def _music_bed(count: int, seed: int = 5) -> np.ndarray:
+    """A chord with a slow swell and a little noise: music that is not speech."""
+    t = np.arange(count) / AUDIO_RATE
+    rng = np.random.default_rng(seed)
+    chord = sum(
+        np.sin(2 * np.pi * f * t + rng.uniform(0, 6)) for f in (110, 165, 220, 277, 330, 440)
+    )
+    swell = 1 + 0.3 * np.sin(2 * np.pi * 2 * t)
+    return (chord / 6 * swell + 0.1 * rng.standard_normal(count)).astype(np.float32)
+
+
+def _five_one_with_dialogue(speech: np.ndarray, bed_level: float) -> np.ndarray:
+    """A 5.1 mix as films are made: music in every channel, dialogue in the centre.
+
+    Channel order L R C LFE Ls Rs."""
+    music = bed_level * _music_bed(len(speech))
+    mix = np.stack([music] * 6, axis=1)
+    mix[:, 3] *= 0.5
+    mix[:, 2] = speech + 0.3 * music
+    return mix.astype(np.float32)
+
+
+def test_dialogue_under_music_is_heard_on_the_centre_channel(detector: VoiceDetector) -> None:
+    speech = _read_mono_16k(SPEECH)
+    truth = detector.probabilities(speech) >= SPEECH_PROB
+    mix = _five_one_with_dialogue(speech, bed_level=0.5)
+    chunk = Chunk(
+        index=0, start_s=0.0, end_s=len(speech) / AUDIO_RATE, fps=2.0,
+        frames=np.zeros((round(2 * len(speech) / AUDIO_RATE), 2, 2, 3), dtype=np.uint8),
+        context_frames=0, audio=Audio(rate=AUDIO_RATE, start_s=0.0, samples=mix),
+    )  # fmt: skip
+    (out,) = attach_voice([chunk], detector)
+    assert out.audio is not None and out.audio.voice is not None
+    heard = out.audio.voice[: len(truth)] >= SPEECH_PROB
+    assert float(np.mean(heard[truth])) > 0.9  # measured 0.99
+    averaged = (
+        detector.probabilities(mix.mean(axis=1, dtype=np.float32)) >= SPEECH_PROB
+    )  # what an average would give
+    assert float(np.mean(averaged[truth])) < 0.2  # measured 0.00: the reason for the rule

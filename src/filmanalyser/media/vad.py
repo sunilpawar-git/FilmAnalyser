@@ -24,7 +24,14 @@ import numpy.typing as npt
 import onnxruntime as ort  # type: ignore[import-untyped]
 
 from filmanalyser.core.chunk import Chunk, Samples
-from filmanalyser.core.config import AUDIO_RATE, MODEL_MAX_BYTES, VOICE_CONTEXT, VOICE_WINDOW
+from filmanalyser.core.config import (
+    AUDIO_RATE,
+    FIVE_ONE_CENTRE,
+    FIVE_ONE_CHANNELS,
+    MODEL_MAX_BYTES,
+    VOICE_CONTEXT,
+    VOICE_WINDOW,
+)
 from filmanalyser.core.errors import ModelError
 
 MODEL_NAME = "silero_vad.onnx"
@@ -113,13 +120,22 @@ class VoiceDetector:
         return out
 
 
+def dialogue_signal(samples: Samples) -> npt.NDArray[np.float32]:
+    """The signal the voice detector hears. For a 5.1 track, the centre channel: film dialogue is
+    mixed there, and averaging six channels buries it under music and effects (on Tears of Steel,
+    speech recall 28% on the average against 60% on the centre; DECISIONS #86). Otherwise the
+    average of the channels."""
+    if samples.shape[1] == FIVE_ONE_CHANNELS:
+        return np.ascontiguousarray(samples[:, FIVE_ONE_CENTRE], dtype=np.float32)
+    return np.mean(samples, axis=1, dtype=np.float32)
+
+
 def attach_voice(chunks: Iterable[Chunk], detector: VoiceDetector) -> Iterator[Chunk]:
-    """Each chunk whose audio carries the speech probability of its window (mono mix)."""
+    """Each chunk whose audio carries the speech probability of its window (`dialogue_signal`)."""
     for chunk in chunks:
         audio = chunk.audio
         if audio is None:
             yield chunk
             continue
-        mono = np.mean(audio.samples, axis=1, dtype=np.float32)
-        voice = detector.probabilities(mono)
+        voice = detector.probabilities(dialogue_signal(audio.samples))
         yield dataclasses.replace(chunk, audio=dataclasses.replace(audio, voice=voice))
