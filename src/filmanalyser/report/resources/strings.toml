@@ -62,6 +62,7 @@ settings_mismatch = "The results in '$name' were made with different chunk setti
 
 [error.analysis]
 default = "The analysis could not be completed."
+bad_timeline = "The stored results cannot be analysed: '$name' is missing or unusable."
 
 [report]
 title = "Shot cut report"

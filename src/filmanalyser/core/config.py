@@ -66,6 +66,30 @@ LOUDNESS_ABS_GATE_LUFS = -70.0  # blocks quieter than this never count (also the
 LOUDNESS_REL_GATE_LU = -10.0  # then blocks more than this below the mean of the rest are dropped
 PEAK_FLOOR_DBFS = -120.0  # the sample peak of digital silence
 
+# Timeline analysis (SSOT; consumed by analysis/). Chosen on synthetic timelines with known change
+# points and noise (DECISIONS #90 to #92); never calibrated on films with known act structure.
+SECONDS_PER_MINUTE = 60.0  # the unit of a cut rate
+TIMELINE_MIN_TAIL_FRACTION = 0.5  # a last chunk shorter than this share of a normal one is dropped
+Z_EPSILON = 1e-9  # a series whose spread is below this is constant: its z-scores are all zero
+ACT_SMOOTH_CHUNKS = 3  # centred moving average over this many chunks before comparing windows
+ACT_WINDOW_CHUNKS = 5  # a boundary is scored on this many chunks before and after it
+ACT_MIN_SCORE = 1.5  # a change score a break must exceed: noise tops out at 1.36, a step is 1.9+
+ACT_MIN_GAP_CHUNKS = 10  # candidates closer than this are one: the strongest is kept
+ACT_MAX_BREAKS = 2  # at most one break per zone, never more than this
+ACT_ZONE_1 = (0.15, 0.40)  # share of the film where the first break may lie
+ACT_ZONE_2 = (0.60, 0.90)  # and the second
+ACT_ZONE_PRIORS = (0.25, 0.75)  # the classical positions: a tie-break only, never a reason
+ACT_TIE_FRACTION = 0.05  # candidates within this share of the best score count as tied
+ACT_TOP_FEATURES = 2  # features named as having moved most across a break
+TENSION_SMOOTH_CHUNKS = 3  # the tension series is smoothed over this many chunks
+TENSION_MIN_PEAK_Z = 3.0  # the tension peak must reach this many standard deviations (noise: 2.75)
+PACING_PLATEAU_MIN_CHUNKS = 5  # a pacing plateau lasts at least this many chunks
+PACING_PLATEAU_RANGE_Z = 0.5  # and its cut rate stays within this range (z units)
+FLAG_OUTLIER_Z = 2.0  # a chunk this many standard deviations above the film is flagged
+FLAG_SILENCE_RATIO = 0.9  # a chunk this silent (share of windows below SILENCE_DBFS) is flagged
+FLAG_TRUE_PEAK_DBFS = 0.0  # a true peak at or above this clips on playback
+FLAG_NO_CUT_CHUNKS = 3  # this many chunks in a row without a cut is a long take
+
 # The settings that decide what a chunk contains: part of the key a stored run is cached by.
 GEOMETRY_FIELDS = (
     "chunk_seconds",
