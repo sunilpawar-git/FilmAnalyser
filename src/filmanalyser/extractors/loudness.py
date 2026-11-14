@@ -18,6 +18,7 @@ import numpy.typing as npt
 
 from filmanalyser.core.chunk import Chunk
 from filmanalyser.core.config import (
+    FIVE_ONE_CHANNELS,
     LOUDNESS_ABS_GATE_LUFS,
     LOUDNESS_BLOCK_S,
     LOUDNESS_HOP_S,
@@ -40,7 +41,7 @@ _TINY = 1e-30  # keeps log10 finite for a silent block (it then fails the absolu
 def channel_weights(channels: int) -> npt.NDArray[np.float64]:
     """BS.1770 channel weights for a layout: 5.1 in L R C LFE Ls Rs order gets the surround and LFE
     weights; any other count weights every channel 1.0."""
-    if channels == 6:
+    if channels == FIVE_ONE_CHANNELS:
         return np.array([1.0, 1.0, 1.0, 0.0, SURROUND_WEIGHT, SURROUND_WEIGHT])
     return np.ones(channels)
 

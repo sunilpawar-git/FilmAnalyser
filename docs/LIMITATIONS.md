@@ -19,11 +19,13 @@ output can and cannot be trusted for.
 
 ## Speech, music and silence
 
-- **Speech under music is missed, and neither threshold changes nor YAMNet fix it** (YAMNet raises
-  speech-under-music recall from 37% to 42%, DECISIONS #85). A lower voice threshold (0.1) recovers only
-  about 8 points of recall and costs about 7 points of precision; a syllable-rate cue does not separate
-  speech under music from tonal music (DECISIONS #81). The remaining options are a different voice
-  model or source separation, which need a decision.
+- **Speech under music depends on the soundtrack format.** For a 5.1 track the voice detector hears
+  the centre channel, where dialogue is mixed: on Tears of Steel, speech recall is 59% with 0.2%
+  false speech (it was 33% on the averaged mix; DECISIONS #86). For a stereo or mono track there is no
+  dialogue channel: speech under loud music or effects is found about a third of the time (32% on
+  Tears of Steel stereo). Voice separation (Demucs) raises that to 53% but is not built in: it needs
+  PyTorch, about 12 minutes per 3-hour film, and reads singing as speech (DECISIONS #87).
+  Threshold changes and YAMNet were measured and do not fix it (DECISIONS #81, #85).
 - **Speech under music is missed (measured).** On eight hand-labelled AVA-Speech clips (5 minutes each, 37,447
   labelled-speech windows pooled), speech over background music is found 29% of the time; clean speech
   80%; speech with noise 57% (DECISIONS #77). Silero reads speech under music as non-speech, and the classifier then labels it
