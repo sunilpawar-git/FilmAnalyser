@@ -75,7 +75,7 @@ def report_mutations() -> list[Probe]:
                 "default-src *; style-src 'unsafe-inline'",
             ),
             "tests/unit/test_renderer.py",
-            "test_a_strict_content_security_policy_forbids_network_and_scripts",
+            "test_a_strict_content_security_policy_forbids_everything_but_inline_style",
         ),
         _mutation(
             "letterbox bars from one dark frame (median removed)",
