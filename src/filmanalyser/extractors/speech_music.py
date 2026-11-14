@@ -21,10 +21,10 @@ from filmanalyser.core.config import MUSIC_FLATNESS, SILENCE_DBFS, SPEECH_PROB, 
 from filmanalyser.core.errors import InputError
 
 NAME = "speech_music"
-VERSION = 1
-FEATURES = ("silence_ratio", "speech_ratio", "music_ratio", "other_ratio")
+VERSION = 2  # v2: music_ratio renamed tonal_ratio (DECISIONS #75)
+FEATURES = ("silence_ratio", "speech_ratio", "tonal_ratio", "other_ratio")
 SILENCE, SPEECH, MUSIC, OTHER = 0, 1, 2, 3
-_LABEL_FEATURE = {SILENCE: "silence_ratio", SPEECH: "speech_ratio", MUSIC: "music_ratio"}
+_LABEL_FEATURE = {SILENCE: "silence_ratio", SPEECH: "speech_ratio", MUSIC: "tonal_ratio"}
 _TINY = 1e-12
 _HANN = np.hanning(VOICE_WINDOW)
 

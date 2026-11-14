@@ -44,7 +44,7 @@ def test_each_chunk_reports_the_audio_it_contains(tmp_path: Path) -> None:
     # floor. A real film's noise floor is far above it; the gate removes the true silence.
     assert LOUDNESS_ABS_GATE_LUFS < lufs[2] < -40.0
     assert columns["speech_music.silence_ratio"][0] == pytest.approx(1.0, abs=0.03)
-    assert columns["speech_music.music_ratio"][1] == pytest.approx(1.0, abs=0.03)
+    assert columns["speech_music.tonal_ratio"][1] == pytest.approx(1.0, abs=0.03)
     assert columns["speech_music.silence_ratio"][2] == pytest.approx(1.0, abs=0.05)
 
 
