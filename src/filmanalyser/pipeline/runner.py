@@ -30,6 +30,7 @@ __all__ = [
     "extract_chunk",
     "schema_for",
     "select_extractors",
+    "validate_input_path",
 ]
 
 

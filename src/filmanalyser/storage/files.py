@@ -12,6 +12,7 @@ import contextlib
 import hashlib
 import os
 import tempfile
+from collections.abc import Iterable
 from pathlib import Path
 
 from filmanalyser.core.config import HASH_BLOCK_BYTES
@@ -118,3 +119,18 @@ def sha256_file(path: Path) -> str:
     except OSError:
         raise InputError(key="error.input.unreadable", name=_base(str(path))) from None
     return digest.hexdigest()
+
+
+def remove_matching(root: Path, patterns: Iterable[str]) -> int:
+    """Delete the regular files directly inside `root` whose names match a pattern; returns how
+    many. Never a directory, never a symlink (a link is left alone, not followed), and a pattern
+    that names a folder or leaves `root` is refused."""
+    removed = 0
+    for pattern in patterns:
+        if "/" in pattern or "\\" in pattern or ".." in pattern:
+            raise ValueError(f"pattern must be a plain file name pattern: {pattern!r}")
+        for path in sorted(root.glob(pattern)):
+            if path.is_file() and not path.is_symlink():
+                path.unlink()
+                removed += 1
+    return removed

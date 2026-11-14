@@ -58,6 +58,8 @@ class ResourceError(FilmAnalyserError):
     """A packaged resource (strings.toml / colors.toml) is missing or malformed: a build bug."""
 
 
+EXIT_INTERRUPTED = 130  # the shell's convention for a run stopped with Ctrl-C (128 + SIGINT)
+
 # SSOT: the categories that own a distinct exit code and message.
 ERROR_TAXONOMY: tuple[type[FilmAnalyserError], ...] = (
     FilmAnalyserError,

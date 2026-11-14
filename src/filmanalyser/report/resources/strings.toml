@@ -10,11 +10,13 @@ version = "$name $version"
 prog = "filmanalyser"
 arg_film = "film"
 help_film = "The film to analyse (an mp4 file)."
-help_out = "The folder for the feature store. A second run with the same folder resumes."
+help_out = "The folder for the feature store and the report (default: the film's name plus .analysis, in the working folder). A second run with the same folder resumes."
 help_report = "Where to write the HTML report (default: report.html inside the output folder)."
 help_verbose = "Print structured progress events to stderr."
 help_separate_voices = "Also find speech under loud music by separating the voice (needs the demucs tool; separation runs at about 10 times real time on an Apple M4 GPU, 4 times on its CPU). A 5.1 film uses its centre channel instead."
 help_separation_model = "The folder holding the voice-separation model (fetch it with make separation-model)."
+help_fresh = "Discard any stored results in the output folder and analyse from the start (the default is to resume)."
+interrupted = "Stopped. Nothing is lost: run the same command again to resume where it stopped."
 done = "Analysed $film: $cuts hard cuts. Report written to $report."
 
 # Every error category has a `default` message; specific messages sit beside it. Placeholders are
@@ -30,6 +32,8 @@ not_found = "The file '$name' does not exist."
 not_a_file = "'$name' is not a regular file."
 unreadable = "The file '$name' cannot be read (check its permissions)."
 invalid_path = "The path '$name' is not valid."
+report_unwritable = "The report '$name' cannot be written: its folder must exist and the file must not be a link."
+report_is_film = "The report '$name' is the film itself and would overwrite it."
 
 [error.decode]
 separation_failed = "Voice separation stopped (exit code $code)."
