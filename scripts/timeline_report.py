@@ -12,7 +12,7 @@ from pathlib import Path
 import pyarrow as pa
 import pyarrow.parquet as pq
 
-from filmanalyser.analysis.act_breaks import find_act_breaks
+from filmanalyser.analysis.act_breaks import ActBreaks, find_act_breaks
 from filmanalyser.analysis.flags import find_flags
 from filmanalyser.analysis.pacing import analyse_pacing
 from filmanalyser.analysis.tension import analyse_tension
@@ -46,6 +46,16 @@ def clock(seconds: float) -> str:
     return f"{whole // 3600}:{whole % 3600 // 60:02d}:{whole % 60:02d}"
 
 
+def empty_zone_lines(acts: ActBreaks) -> list[str]:
+    """A zone judged with nothing found reads differently from one the film is too short for."""
+    return [
+        f"zone {zone}: film too short to judge (needs {clock(acts.min_film_s or 0.0)})"
+        if zone in acts.unscored_zones
+        else f"no break in zone {zone}"
+        for zone in acts.empty_zones
+    ]
+
+
 def describe(columns: Columns) -> list[str]:
     timeline = build_timeline(columns)
     acts, tension, pacing = (
@@ -63,7 +73,7 @@ def describe(columns: Columns) -> list[str]:
         f"moved most: {', '.join(b.moved)}"
         for b in acts.breaks
     ]
-    lines += [f"no break in zone {zone}" for zone in acts.empty_zones]
+    lines += empty_zone_lines(acts)
     peak = tension.peak
     lines.append(
         f"tension peak at {clock(peak.start_s)} (z {peak.value:.2f}; "

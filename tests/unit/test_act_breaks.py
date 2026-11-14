@@ -6,7 +6,13 @@ from typing import Any
 import numpy as np
 import pytest
 
-from filmanalyser.analysis.act_breaks import ActBreaks, ActSettings, change_scores, find_act_breaks
+from filmanalyser.analysis.act_breaks import (
+    ActBreaks,
+    ActSettings,
+    change_scores,
+    find_act_breaks,
+    min_chunks,
+)
 from filmanalyser.analysis.timeline import Columns, build_timeline
 from filmanalyser.core import features as f
 from filmanalyser.core.config import (
@@ -182,6 +188,50 @@ def test_a_film_of_exactly_two_windows_can_be_scored_once() -> None:
     result = _breaks(block_film([5, 5], [1.0, 3.0]))
     assert result.scored == 1
     assert result.breaks == ()  # the boundary at 50% is in neither zone
+
+
+def test_the_minimum_film_puts_a_scorable_boundary_in_each_zone() -> None:
+    assert min_chunks(ACT_WINDOW_CHUNKS) == 13  # 5 chunks each side; 5 of 13 is 38%, 8 is 62%
+
+
+@pytest.mark.parametrize("window", range(1, 9))
+def test_a_film_of_the_minimum_length_can_be_judged_in_both_zones(window: int) -> None:
+    """DECISIONS #93: a film too short to score a zone says so; one chunk longer than that, it
+    does not."""
+    needed = min_chunks(window)
+    assert _breaks(timeline(needed), window=window).unscored_zones == ()
+    assert _breaks(timeline(needed - 1), window=window).unscored_zones != ()
+
+
+def test_a_short_film_says_it_is_too_short_rather_than_that_nothing_changed() -> None:
+    result = _breaks(block_film([6, 6], [1.0, 3.0]))  # 12 chunks, like the local Tears of Steel
+    assert result.breaks == ()
+    assert result.empty_zones == (1, 2)
+    assert result.unscored_zones == (1, 2)
+    assert result.min_film_s == 13 * 60.0
+
+
+def test_a_long_enough_film_without_a_change_was_judged_and_found_nothing() -> None:
+    result = _breaks(timeline(100))
+    assert result.empty_zones == (1, 2)
+    assert result.unscored_zones == ()
+
+
+def test_the_minimum_length_follows_the_chunk_length() -> None:
+    cols = timeline(12)
+    starts = np.arange(12) * 10.0  # 10 s chunks
+    cols[f.START_S], cols[f.END_S] = starts, starts + 10.0
+    assert _breaks(cols).min_film_s == 13 * 10.0
+
+
+def test_the_minimum_length_counts_full_chunks_not_a_short_last_one() -> None:
+    assert _breaks(timeline(2, last_s=20.0)).min_film_s == 13 * 60.0  # like the 80 s stitched film
+
+
+def test_a_film_with_no_chunks_has_no_minimum_length_to_state() -> None:
+    result = _breaks(timeline(0))
+    assert result.unscored_zones == (1, 2)
+    assert result.min_film_s is None
 
 
 def test_without_audio_the_breaks_come_from_video_features_alone() -> None:
