@@ -39,11 +39,17 @@ def oversample(channel: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
 
 def true_peak_linear(samples: npt.NDArray[np.float64], core_offset: int) -> float:
     """The largest |value| between samples over the core (`core_offset` samples into the window),
-    for a (count, channels) window. Zero for an empty core."""
+    for a (count, channels) window. Zero for an empty core.
+
+    Only points whose interpolation kernel lies wholly inside the window are counted. The window is
+    zero-padded past its end, so a point near the end would otherwise pick up a ringing overshoot
+    the real signal does not have (up to 0.7 dB on an abrupt tone, DECISIONS #71). The cost: a peak
+    within the last HALF_TAPS samples (under 1 ms) is left out."""
     peak = 0.0
+    end = max(0, len(samples) - HALF_TAPS) * UPSAMPLE
     for channel in range(samples.shape[1]):
         upsampled = oversample(samples[:, channel])
-        core = upsampled[core_offset * UPSAMPLE :]
+        core = upsampled[core_offset * UPSAMPLE : end]
         if core.size:
             peak = max(peak, float(np.max(np.abs(core))))
     return peak
