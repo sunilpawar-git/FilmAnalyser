@@ -15,6 +15,7 @@ speech 12.0 15.5        # a span: someone talks (dialogue, narration, speech ove
 speech 40.2 44.9
 music 0 79.7            # a span: music is the main sound; background music under speech is not music
 silence 60.0 61.0       # a span: no audible sound
+nospeech 70.0 75.0      # a span: no speech (music or noise only); optional, used for speech false alarms
 cut 31.04               # a hard cut: the frame where a new shot starts
 cut 58.20
 ```
