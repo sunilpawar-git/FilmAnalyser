@@ -11,7 +11,15 @@ from tests.architecture._scan import PKG_ROOT, iter_files, make_package, parse
 
 SCOPES = ("cli", "report")
 EXEMPT_DIRS = {"resources"}  # the loaders themselves name their files and tables
-TECHNICAL = {"utf-8", "__main__", "r", "rb", "w", "wb"}  # not user-facing
+TECHNICAL = {
+    "utf-8",
+    "__main__",
+    "r",
+    "rb",
+    "w",
+    "wb",
+    "version",
+}  # not user-facing ("version": argparse action)
 # Technical tokens are not user-facing: option flags, format specs and log formats, and dotted or
 # underscored identifiers (column keys, file and package names, argparse actions). Plain words
 # and sentences are still text and must come from strings.toml.

@@ -1,47 +1,21 @@
-"""Command line: `filmanalyser FILM --out DIR [--report FILE] [-v]` (DECISIONS #56).
+"""The command: `filmanalyser FILM [--out DIR] [--report FILE] [--fresh] [-v]` (DECISIONS #56).
 
-Argument parsing and printing only: the analysis lives in pipeline/, the page in report/. Every
-message comes from strings.toml. An expected error prints its message and returns its exit code
-(the error taxonomy, core/errors.py); it never prints a traceback.
+Entry point and error mapping only. An expected error prints its message from strings.toml and
+returns its taxonomy exit code (core/errors.py); an interrupt returns 130; anything unexpected
+returns 1 with a plain message. None of them prints a traceback unless -v asks for one.
 """
 
-import argparse
 import contextlib
 import logging
 import sys
+import traceback
 from collections.abc import Iterator, Sequence
-from pathlib import Path
 
-from filmanalyser.core.config import Config
-from filmanalyser.core.errors import FilmAnalyserError
+from filmanalyser.cli.args import parse_args
+from filmanalyser.cli.run import run
+from filmanalyser.core.errors import EXIT_INTERRUPTED, FilmAnalyserError
 from filmanalyser.core.events import LOG_FORMAT, LOGGER
-from filmanalyser.pipeline.runner import analyse, default_model_dir
-from filmanalyser.report.renderer import render_report
-from filmanalyser.report.resources.colors import ColorTokens
-from filmanalyser.report.resources.layout import REPORT_FILE
 from filmanalyser.report.resources.strings import Strings
-from filmanalyser.report.viewmodel import build_view
-
-
-def _parser(strings: Strings) -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog=strings.text("cli.prog"), description=strings.text("app.tagline")
-    )
-    parser.add_argument(strings.text("cli.arg_film"), help=strings.text("cli.help_film"))
-    parser.add_argument("--out", required=True, help=strings.text("cli.help_out"))
-    parser.add_argument("--report", help=strings.text("cli.help_report"))
-    parser.add_argument(
-        "--separate-voices", action="store_true", help=strings.text("cli.help_separate_voices")
-    )
-    parser.add_argument(
-        "--separation-model",
-        default=str(default_model_dir()),
-        help=strings.text("cli.help_separation_model"),
-    )
-    parser.add_argument(
-        "-v", "--verbose", action="store_true", help=strings.text("cli.help_verbose")
-    )
-    return parser
 
 
 @contextlib.contextmanager
@@ -64,26 +38,27 @@ def _events_to_stderr(verbose: bool) -> Iterator[None]:
         LOGGER.setLevel(previous)
 
 
-def _run(args: argparse.Namespace, strings: Strings) -> int:
-    film, out = Path(args.film), Path(args.out)
-    report = Path(args.report) if args.report else out / REPORT_FILE
-    config = Config(separate_voices=args.separate_voices, separation_model=args.separation_model)
-    store = analyse(film, out, config)
-    view = build_view(store.read_columns(), film=film.name)
-    report.write_text(render_report(view, strings, ColorTokens.load()), encoding="utf-8")
-    message = strings.text(
-        "cli.done", film=film.name, cuts=view.overview.total_cuts, report=report.name
-    )
-    print(message)
-    return 0
+def _printable(text: str) -> str:
+    """A message with every control character (a terminal escape in a file name, a newline)
+    replaced, so a film's name cannot rewrite the screen or forge a second line."""
+    return "".join(ch if ch.isprintable() else "?" for ch in text)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     strings = Strings.load()
-    args = _parser(strings).parse_args(argv)
+    options = parse_args(argv, strings)
     try:
-        with _events_to_stderr(args.verbose):
-            return _run(args, strings)
+        with _events_to_stderr(options.verbose):
+            print(_printable(run(options, strings)))
+            return 0
     except FilmAnalyserError as exc:
-        print(strings.text(exc.key, **exc.fields), file=sys.stderr)
+        print(_printable(strings.text(exc.key, **exc.fields)), file=sys.stderr)
         return exc.exit_code
+    except KeyboardInterrupt:
+        print(strings.text("cli.interrupted"), file=sys.stderr)
+        return EXIT_INTERRUPTED
+    except Exception:  # the last line of defence: a message, not a traceback (unless -v)
+        print(strings.text(FilmAnalyserError.message_key), file=sys.stderr)
+        if options.verbose:
+            traceback.print_exc()
+        return FilmAnalyserError.exit_code

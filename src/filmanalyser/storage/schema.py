@@ -34,6 +34,9 @@ def _bad_features(name: str) -> StorageError:
     return StorageError(key="error.storage.bad_features", name=name)
 
 
+CHUNK_GLOB = "chunk_" + "[0-9]" * 6 + ".parquet"  # every name chunk_file_name can produce
+
+
 def chunk_file_name(index: int) -> str:
     """The one place a chunk file is named. Built from an integer only, never from user text."""
     if isinstance(index, bool) or not isinstance(index, int) or index < 0:
