@@ -2,12 +2,14 @@
 
 import json
 import logging
+from pathlib import Path
 
 import numpy as np
 import pytest
 
 from filmanalyser.core.events import format_event, log_event
-from filmanalyser.media.telemetry import peak_rss_mb
+from filmanalyser.media import telemetry
+from filmanalyser.media.telemetry import parse_vm_hwm, peak_rss_mb
 
 
 def test_event_is_one_json_object() -> None:
@@ -48,3 +50,29 @@ def test_log_event_writes_through_the_standard_logger(caplog: pytest.LogCaptureF
 def test_peak_rss_is_a_plausible_megabyte_figure() -> None:
     value = peak_rss_mb()
     assert 5 < value < 100_000
+
+
+def test_the_linux_peak_is_read_from_vm_hwm() -> None:
+    status = "Name:\tpython\nVmPeak:\t 900000 kB\nVmHWM:\t   51200 kB\nVmRSS:\t   40960 kB\n"
+    assert parse_vm_hwm(status) == 50.0
+    assert parse_vm_hwm("Name:\tpython\n") is None
+
+
+def test_the_own_peak_is_used_where_the_system_reports_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    status = tmp_path / "status"
+    status.write_text("VmHWM:\t 2048 kB\n", encoding="ascii")
+    monkeypatch.setattr(telemetry, "_STATUS", status)
+    assert peak_rss_mb() == 2.0
+
+
+@pytest.mark.parametrize("content", [None, "Name:\tpython\n"])
+def test_without_vm_hwm_the_process_peak_is_used(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, content: str | None
+) -> None:
+    status = tmp_path / "status"  # missing (macOS) or without the line
+    if content is not None:
+        status.write_text(content, encoding="ascii")
+    monkeypatch.setattr(telemetry, "_STATUS", status)
+    assert 5 < peak_rss_mb() < 100_000
