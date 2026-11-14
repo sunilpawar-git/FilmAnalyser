@@ -37,7 +37,7 @@ from filmanalyser.media.paths import validate_input_path
 from filmanalyser.media.probe import probe_video
 from filmanalyser.pipeline.runner import chunk_stream
 
-SPAN_KINDS = ("speech", "music", "silence")
+SPAN_KINDS = ("speech", "music", "silence", "nospeech")  # nospeech: labelled as no speech (AVA)
 SEGMENT_S = 60.0  # film-level loudness is computed in segments this long (bounded memory)
 
 
