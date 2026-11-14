@@ -6,27 +6,28 @@ output can and cannot be trusted for.
 
 ## Shots and cuts
 
-- **Hard cuts only.** Fades and dissolves are not detected (P4-3). The shot detector compares
-  colour histograms of consecutive frames, which catches a cut but not a transition spread over
-  many frames. A gradual transition is therefore reported as no cut at all. Evidence: the synthetic
-  cut tests have no gradual transitions; the stitched real-footage film (below) has none either.
-  Remedy, if wanted: a dissolve/fade detector with its own synthetic ground truth (a new decision).
-- **Precision on real footage is low.** On a stitched film of eight real 10-second shots with seven
-  known hard cuts (from IMG_0309, Tears of Steel, The Odyssey and two AVA clips; ground truth exact), with a tolerance of
-  0.25 s the detector gives recall 86% (6 of 7) and precision 54% (7 false cuts among 13 reported).
-  Five of the seven false cuts fall inside one AVA clip and two inside one film shot; none sit at a join,
-  but the cause (motion, compression or flashes) was not inspected. At the
-  tightest tolerance (one analysis frame, 0.08 s) precision is 23% and recall 43%. Cut timing is
-  therefore reliable only to about a quarter of a second, and the cut-rate curve over-counts on
-  busy footage. Measured on DECISIONS #76.
-- **Some joins are missed.** The join at 49.9 s (Tears of Steel into an AVA clip) was not found; the
-  cause was not inspected.
-- **Cut-rate and average shot length are as good as the cut count**, so they carry the same
-  over-counting on busy footage.
+- **Hard cuts are found with good precision, and recall is limited.** On the verified stitched film
+  (16 hard cuts, inspected frame by frame; DECISIONS #82), at a 0.25 s tolerance the detector gives
+  precision 92% and recall 69%. The misses are cuts whose picture change stays below the 0.40
+  threshold (29.17 s at 0.23, 44.0 s at 0.38). At one analysis frame (0.08 s) recall is 50%: cut
+  timing is reliable to about a quarter of a second. Lowering the threshold or using a neighbourhood
+  test adds false cuts on camera movement, and was measured and rejected (DECISIONS #80).
+- **Gradual transitions are found on clean footage, but busy footage gives false ones.** A dissolve
+  between two textured scenes and a fade to black are found at the right times (DECISIONS #79), and
+  both gradual transitions on the verified film are found with no false ones. On Tears of Steel,
+  however, 33 transitions were reported in 12 minutes. Of nine sampled, only about two were real
+  fades; the rest were flashes, flicker and motion. Treat `gradual` as a candidate list, not a count
+  of fades, on busy footage.
+- **Some joins are missed.** A join at 49.9 s (Tears of Steel into an AVA clip) changes by 0.39 and
+  is missed at the 0.40 threshold.
 
 ## Speech, music and silence
 
-- **Speech under music is missed.** On eight hand-labelled AVA-Speech clips (5 minutes each, 37,447
+- **Speech under music is missed, and no cheap fix works.** A lower voice threshold (0.1) recovers only
+  about 8 points of recall and costs about 7 points of precision; a syllable-rate cue does not separate
+  speech under music from tonal music (DECISIONS #81). The remaining options are a different voice
+  model or source separation, which need a decision.
+- **Speech under music is missed (measured).** On eight hand-labelled AVA-Speech clips (5 minutes each, 37,447
   labelled-speech windows pooled), speech over background music is found 29% of the time; clean speech
   80%; speech with noise 57% (DECISIONS #77). Silero reads speech under music as non-speech, and the classifier then labels it
   tonal. The feature is therefore `tonal_ratio` (DECISIONS #75), not "music".

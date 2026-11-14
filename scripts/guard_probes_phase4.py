@@ -46,8 +46,8 @@ def pipeline_mutations() -> list[Probe]:
             "boundary cut dropped (overlap not compared)",
             f"{media}/extractors/shot_cuts.py",
             (
-                "core = distances[max(1, chunk.context_frames) - 1 :]",
-                "core = distances[max(1, chunk.context_frames) :]",
+                "    first = max(1, context_frames)\n    gradual: list[tuple[int, int]] = []",
+                "    first = max(1, context_frames + 1)\n    gradual: list[tuple[int, int]] = []",
             ),
             "tests/unit/test_shot_cuts.py",
             "test_a_cut_on_the_first_core_frame_is_counted_once_in_its_own_chunk",

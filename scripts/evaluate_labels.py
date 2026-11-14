@@ -3,16 +3,13 @@
     uv run --locked python scripts/evaluate_labels.py FILM FILM.labels [--cut-tolerance 0.25]
 
 It reports precision and recall for speech, music and silence (per 32 ms window, over the windows
-the labels cover), precision and recall for hard cuts (within a tolerance), and the loudness gap
-against the `ebur128` numbers in the label file. Films never leave the machine.
-
-The parsing and the scoring are pure functions (tested in tests/unit/test_evaluate_labels.py); the
-film-level run uses the same decoder, voice model, classifier and gating as the pipeline.
+the labels cover), gradual transitions, hard cuts (within a tolerance), and the loudness gap against
+the `ebur128` numbers in the label file. Films never leave the machine. The format and the scoring
+are in label_format.py; this module runs the analysis.
 """
 
 import argparse
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
@@ -30,136 +27,38 @@ from filmanalyser.core.config import (
 from filmanalyser.extractors._kweighting import k_weight
 from filmanalyser.extractors._truepeak import true_peak_linear
 from filmanalyser.extractors.loudness import block_energies, channel_weights, gated_lufs
-from filmanalyser.extractors.shot_cuts import cut_positions
+from filmanalyser.extractors.shot_cuts import cut_positions, frame_distances, segment
 from filmanalyser.extractors.speech_music import MUSIC, SILENCE, SPEECH, classify_windows
 from filmanalyser.media.audio import PcmFormat, audio_stream, audio_window
 from filmanalyser.media.paths import validate_input_path
 from filmanalyser.media.probe import probe_video
 from filmanalyser.pipeline.runner import chunk_stream
+from label_format import (
+    Labels,
+    Score,
+    Span,
+    gap,
+    inside,
+    parse_labels,
+    percent,
+    score_cuts,
+    score_gradual,
+    score_kind,
+)
 
-SPAN_KINDS = ("speech", "music", "silence", "nospeech")  # nospeech: labelled as no speech (AVA)
+__all__ = [
+    "Labels",
+    "Score",
+    "Span",
+    "gap",
+    "inside",
+    "parse_labels",
+    "score_cuts",
+    "score_gradual",
+    "score_kind",
+]
+
 SEGMENT_S = 60.0  # film-level loudness is computed in segments this long (bounded memory)
-
-
-@dataclass(frozen=True)
-class Span:
-    kind: str
-    start: float
-    end: float
-
-
-@dataclass(frozen=True)
-class Labels:
-    spans: tuple[Span, ...]
-    cuts: tuple[float, ...]
-    ebur_integrated: float | None = None
-    ebur_true_peak: float | None = None
-
-
-def parse_labels(text: str) -> Labels:
-    """Parse a label file (docs/LABELS.md). Raises ValueError naming the line that is wrong."""
-    spans: list[Span] = []
-    cuts: list[float] = []
-    ebur: dict[str, float] = {}
-    for number, raw in enumerate(text.splitlines(), start=1):
-        tokens = raw.split("#", 1)[0].split()
-        if not tokens:
-            continue
-        try:
-            if tokens[0] in SPAN_KINDS and len(tokens) == 3:
-                start, end = float(tokens[1]), float(tokens[2])
-                if not 0 <= start < end:
-                    raise ValueError("a span needs 0 <= start < end")
-                spans.append(Span(tokens[0], start, end))
-            elif tokens[0] == "cut" and len(tokens) == 2:
-                cuts.append(float(tokens[1]))
-            elif tokens[0] in ("ebur128_integrated", "ebur128_true_peak") and len(tokens) == 2:
-                ebur[tokens[0]] = float(tokens[1])
-            else:
-                raise ValueError("unknown line")
-        except ValueError as error:
-            raise ValueError(f"line {number}: {error}: {raw.strip()!r}") from None
-    _check_no_overlap(spans)
-    return Labels(
-        tuple(spans),
-        tuple(sorted(cuts)),
-        ebur.get("ebur128_integrated"),
-        ebur.get("ebur128_true_peak"),
-    )
-
-
-def _check_no_overlap(spans: list[Span]) -> None:
-    for kind in SPAN_KINDS:
-        same = sorted((s for s in spans if s.kind == kind), key=lambda s: s.start)
-        for before, after in zip(same, same[1:], strict=False):
-            if after.start < before.end:
-                raise ValueError(f"{kind} spans overlap at {after.start} s")
-
-
-def inside(
-    spans: tuple[Span, ...], kind: str, times: npt.NDArray[np.float64]
-) -> npt.NDArray[np.bool_]:
-    """For each time: is it inside a span of `kind`?"""
-    mask = np.zeros(len(times), dtype=bool)
-    for span in spans:
-        if span.kind == kind:
-            mask |= (times >= span.start) & (times < span.end)
-    return mask
-
-
-@dataclass(frozen=True)
-class Score:
-    precision: float | None
-    recall: float | None
-    count: int
-
-
-def score_kind(
-    labels: Labels,
-    kind: str,
-    times: npt.NDArray[np.float64],
-    predicted: npt.NDArray[np.bool_],
-) -> Score:
-    """Precision and recall for one kind over the windows the labels cover (any span counts as
-    covered, so a window labelled only as music is a negative for speech)."""
-    covered = np.zeros(len(times), dtype=bool)
-    for span in labels.spans:
-        covered |= (times >= span.start) & (times < span.end)
-    positive = inside(labels.spans, kind, times)
-    use = covered
-    truth, guess = positive[use], predicted[use]
-    true_pos = int(np.count_nonzero(truth & guess))
-    guessed = int(np.count_nonzero(guess))
-    actual = int(np.count_nonzero(truth))
-    return Score(
-        true_pos / guessed if guessed else None,
-        true_pos / actual if actual else None,
-        int(use.sum()),
-    )
-
-
-def score_cuts(truth: tuple[float, ...], found: npt.NDArray[np.float64], tolerance: float) -> Score:
-    """Each found cut counts as right if a labelled cut is within `tolerance` seconds, and each
-    labelled cut counts as found if a detected cut is within it."""
-    if found.size == 0:
-        precision = None
-    else:
-        hits = sum(1 for f in found if any(abs(f - t) <= tolerance for t in truth))
-        precision = hits / found.size
-    if not truth:
-        recall = None
-    else:
-        matched = sum(1 for t in truth if np.any(np.abs(found - t) <= tolerance))
-        recall = matched / len(truth)
-    return Score(precision, recall, len(truth))
-
-
-def gap(ours: float | None, reference: float | None) -> float | None:
-    return None if ours is None or reference is None else ours - reference
-
-
-def _percent(value: float | None) -> str:
-    return "n/a" if value is None else f"{100 * value:.1f}%"
 
 
 def window_predictions(path: Path) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int64]]:
@@ -178,6 +77,18 @@ def window_predictions(path: Path) -> tuple[npt.NDArray[np.float64], npt.NDArray
                 times.append(chunk.first_frame_s + (start + VOICE_WINDOW / 2) / AUDIO_RATE)
                 labels.append(int(label))
     return np.asarray(times), np.asarray(labels, dtype=np.int64)
+
+
+def gradual_predictions(path: Path) -> list[tuple[float, float]]:
+    """Gradual transitions the detector finds, as (start, end) film seconds."""
+    found: list[tuple[float, float]] = []
+    for chunk in chunk_stream(path, Config(), 0, None):
+        if not isinstance(chunk, Chunk):
+            raise TypeError("the decoder yields chunks")
+        seg = segment(frame_distances(chunk.frames), chunk.context_frames)
+        for a, b in seg.gradual:
+            found.append((chunk.first_frame_s + a / chunk.fps, chunk.first_frame_s + b / chunk.fps))
+    return found
 
 
 def cut_predictions(path: Path) -> npt.NDArray[np.float64]:
@@ -229,14 +140,19 @@ def report(labels: Labels, film: Path, tolerance: float) -> list[str]:
         silence = score_kind(labels, "silence", times, predicted == SILENCE)
         for name, score in (("speech", speech), ("music", music), ("silence", silence)):
             lines.append(
-                f"{name:8s} precision {_percent(score.precision)}  recall {_percent(score.recall)}"
+                f"{name:8s} precision {percent(score.precision)}  recall {percent(score.recall)}"
                 f"  ({score.count} windows labelled)"
             )
     else:
         lines.append("no audio track: speech, music and silence not scored")
+    grad = score_gradual(labels, gradual_predictions(film))
     cuts = score_cuts(labels.cuts, cut_predictions(film), tolerance)
     lines.append(
-        f"cuts     precision {_percent(cuts.precision)}  recall {_percent(cuts.recall)}"
+        f"gradual  precision {percent(grad.precision)}  recall {percent(grad.recall)}"
+        f"  ({grad.count} labelled transitions)"
+    )
+    lines.append(
+        f"cuts     precision {percent(cuts.precision)}  recall {percent(cuts.recall)}"
         f"  ({cuts.count} labelled, tolerance {tolerance:.2f} s)"
     )
     lufs, true_peak = film_loudness(film)
