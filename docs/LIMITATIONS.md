@@ -23,9 +23,12 @@ output can and cannot be trusted for.
   the centre channel, where dialogue is mixed: on Tears of Steel, speech recall is 59% with 0.2%
   false speech (it was 33% on the averaged mix; DECISIONS #86). For a stereo or mono track there is no
   dialogue channel: speech under loud music or effects is found about a third of the time (32% on
-  Tears of Steel stereo). Voice separation (Demucs) raises that to 53% but is not built in: it needs
-  PyTorch, about 12 minutes per 3-hour film, and reads singing as speech (DECISIONS #87).
-  Threshold changes and YAMNet were measured and do not fix it (DECISIONS #81, #85).
+  Tears of Steel stereo). The opt-in `--separate-voices` mode separates the voice (Demucs) on chunks
+  whose background is loud: overall speech recall on Tears of Steel stereo goes from 49% to 59%, and
+  on the AVA clips from 56% to 68% (DECISIONS #88). Its costs: it needs the `demucs` tool (PyTorch)
+  and an 84 MB model, about 8 times real time on an Apple M4 GPU (much slower on CPU only), and it
+  reads singing as speech (false speech 2.2% to 5.4% on AVA; 16% on a clip of sustained singing).
+  Without it, threshold changes and YAMNet were measured and do not fix this (DECISIONS #81, #85).
 - **Speech under music is missed (measured).** On eight hand-labelled AVA-Speech clips (5 minutes each, 37,447
   labelled-speech windows pooled), speech over background music is found 29% of the time; clean speech
   80%; speech with noise 57% (DECISIONS #77). Silero reads speech under music as non-speech, and the classifier then labels it

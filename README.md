@@ -45,8 +45,24 @@ filmanalyser film.mp4 --out work/film -v     # also prints the structured progre
 ```
 Repeating a run with the same `--out` folder resumes at the first unfinished chunk. Exit codes:
 `0` success, `1` internal error, `2` invalid input or setting, `3` the film could not be decoded
-(or ffmpeg is missing), `5` the stored features are damaged or belong to another film. The report
+(or ffmpeg is missing, or voice separation failed), `4` a model file is missing or failed its
+integrity check, `5` the stored features are damaged or belong to another film. The report
 is one static HTML page (no scripts, no network); it shows the hard cuts per minute over the film.
+
+### Optional: speech under loud music (stereo films)
+A 5.1 film's dialogue is read from its centre channel. A stereo or mono film has no dialogue
+channel, so speech under loud music is often missed. `--separate-voices` adds voice separation
+(Demucs htdemucs, MIT) on the chunks whose background is loud, and a window counts as speech when
+either the mix or the separated voice says so (DECISIONS #88). Setup, once:
+```sh
+uv tool install demucs==4.1.0 # the separation tool (brings PyTorch; not a project dependency)
+make separation-model         # the pinned model (84 MB) into ~/.cache/filmanalyser/htdemucs
+filmanalyser film.mp4 --out work/film --separate-voices
+```
+It is off by default, never downloads at run time (the model folder is verified against
+`SEPARATION.sha256` first), and is skipped on 5.1 films. A different folder can be given with
+`--separation-model` or `FILMANALYSER_SEPARATION_MODEL`. Stores made with and without it are kept
+apart (it is part of the store key).
 
 ## Development
 ```sh
@@ -56,6 +72,8 @@ make check     # the build: lint, mypy --strict, tests + coverage, security, whe
 make nightly   # slow checks (long-film memory): run by the nightly workflow
 make real-clip # real-footage kill-and-resume test: FILMANALYSER_REAL_CLIP=/path/to/clip make real-clip
 make models   # fetch the pinned Silero VAD model (setup only; the app never downloads)
+make separation-model  # opt-in: the pinned voice-separation model (needs demucs to use)
+make separation-check  # opt-in: real separation test (demucs on PATH + the model)
 ```
 The real-footage test never runs inside `make check` (DECISIONS #53); the clip stays outside the repo.
 ### Requirements

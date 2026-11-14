@@ -8,7 +8,7 @@ AUDIT_REQS := .cache/audit-requirements.txt
 # is numpy's exact compound expression: every part is permissive (DECISIONS #33).
 LICENSE_ALLOW := MIT License;MIT;BSD License;3-Clause BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Python Software Foundation License;PSF-2.0;ISC License (ISCL);MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0
 
-.PHONY: help sync hooks lint typecheck test security audit licenses secrets build guards check ci nightly real-clip models pr ship tag-phase clean
+.PHONY: help sync hooks lint typecheck test security audit licenses secrets build guards check ci nightly real-clip models separation-model separation-check pr ship tag-phase clean
 
 help:
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -26,8 +26,8 @@ lint: ## ruff lint + format check (includes complexity, size-of-function, args r
 typecheck: ## mypy --strict
 	$(RUN) mypy
 
-test: ## unit + architecture + integration tests with coverage gate (real_clip and slow are deselected)
-	$(RUN) pytest tests/unit tests/architecture tests/integration -m "not real_clip and not slow"
+test: ## unit + architecture + integration tests with coverage gate (real_clip, slow, separation deselected)
+	$(RUN) pytest tests/unit tests/architecture tests/integration -m "not real_clip and not slow and not separation"
 
 security: audit licenses secrets ## bandit, pip-audit, licence allowlist, gitleaks
 	$(RUN) bandit -q -r src scripts -c pyproject.toml
@@ -61,6 +61,12 @@ nightly: ## slow checks (long-film memory, benchmarks): nightly workflow only
 
 models: ## fetch the pinned Silero VAD model (setup only; the app never downloads)
 	$(RUN) python scripts/fetch_models.py
+
+separation-model: ## fetch the pinned voice-separation model (opt-in; 84 MB; needs demucs on PATH to use)
+	$(RUN) python scripts/fetch_models.py --separation
+
+separation-check: ## real voice-separation test: needs demucs on PATH and make separation-model
+	$(RUN) pytest -m separation --no-cov
 
 real-clip: ## real footage smoke test: FILMANALYSER_REAL_CLIP=/path/to/clip.mov make real-clip
 	$(RUN) pytest -m real_clip --no-cov

@@ -13,6 +13,8 @@ help_film = "The film to analyse (an mp4 file)."
 help_out = "The folder for the feature store. A second run with the same folder resumes."
 help_report = "Where to write the HTML report (default: report.html inside the output folder)."
 help_verbose = "Print structured progress events to stderr."
+help_separate_voices = "Also find speech under loud music by separating the voice (needs the demucs tool; separation runs at about 10 times real time on an Apple M4 GPU, 4 times on its CPU). A 5.1 film uses its centre channel instead."
+help_separation_model = "The folder holding the voice-separation model (fetch it with make separation-model)."
 done = "Analysed $film: $cuts hard cuts. Report written to $report."
 
 # Every error category has a `default` message; specific messages sit beside it. Placeholders are
@@ -21,6 +23,7 @@ done = "Analysed $film: $cuts hard cuts. Report written to $report."
 default = "An unexpected internal error occurred."
 
 [error.input]
+no_separator = "Voice separation needs the '$tool' tool on PATH. Install it once (for example `uv tool install demucs==4.1.0`), then fetch its model with `make separation-model`."
 default = "The input is invalid."
 bad_setting = "The setting '$name' has an invalid value."
 not_found = "The file '$name' does not exist."
@@ -29,6 +32,7 @@ unreadable = "The file '$name' cannot be read (check its permissions)."
 invalid_path = "The path '$name' is not valid."
 
 [error.decode]
+separation_failed = "Voice separation stopped (exit code $code)."
 default = "The film could not be decoded."
 tool_missing = "The required tool '$tool' was not found. Install ffmpeg (it provides ffprobe)."
 probe_failed = "'$name' could not be inspected; it may not be a valid video file."
@@ -39,6 +43,7 @@ no_frames = "No video frames could be decoded from '$name'."
 audio_failed = "The audio of '$name' could not be decoded."
 
 [error.model]
+separation = "The voice-separation model file '$name' is missing or failed its integrity check. Fetch it with `make separation-model`."
 default = "A model file is missing or failed its integrity check."
 
 [error.storage]

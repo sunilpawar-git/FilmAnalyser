@@ -12,9 +12,10 @@ import sys
 from collections.abc import Iterator, Sequence
 from pathlib import Path
 
+from filmanalyser.core.config import Config
 from filmanalyser.core.errors import FilmAnalyserError
 from filmanalyser.core.events import LOG_FORMAT, LOGGER
-from filmanalyser.pipeline.runner import analyse
+from filmanalyser.pipeline.runner import analyse, default_model_dir
 from filmanalyser.report.renderer import render_report
 from filmanalyser.report.resources.colors import ColorTokens
 from filmanalyser.report.resources.layout import REPORT_FILE
@@ -29,6 +30,14 @@ def _parser(strings: Strings) -> argparse.ArgumentParser:
     parser.add_argument(strings.text("cli.arg_film"), help=strings.text("cli.help_film"))
     parser.add_argument("--out", required=True, help=strings.text("cli.help_out"))
     parser.add_argument("--report", help=strings.text("cli.help_report"))
+    parser.add_argument(
+        "--separate-voices", action="store_true", help=strings.text("cli.help_separate_voices")
+    )
+    parser.add_argument(
+        "--separation-model",
+        default=str(default_model_dir()),
+        help=strings.text("cli.help_separation_model"),
+    )
     parser.add_argument(
         "-v", "--verbose", action="store_true", help=strings.text("cli.help_verbose")
     )
@@ -58,7 +67,8 @@ def _events_to_stderr(verbose: bool) -> Iterator[None]:
 def _run(args: argparse.Namespace, strings: Strings) -> int:
     film, out = Path(args.film), Path(args.out)
     report = Path(args.report) if args.report else out / REPORT_FILE
-    store = analyse(film, out)
+    config = Config(separate_voices=args.separate_voices, separation_model=args.separation_model)
+    store = analyse(film, out, config)
     view = build_view(store.read_columns(), film=film.name)
     report.write_text(render_report(view, strings, ColorTokens.load()), encoding="utf-8")
     message = strings.text("cli.done", film=film.name, cuts=view.total_cuts, report=report.name)
