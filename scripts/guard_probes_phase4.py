@@ -1,6 +1,7 @@
 """Phase 4 guards: planted violations and mutation probes for the rules that phase adds
-(DECISIONS #49-#58). Kept apart from guard_probes.py to stay within the 300-line limit. Each planted
-violation must fail for its stated reason; each mutation must turn its named test red."""
+(DECISIONS #49-#58), and for the opt-in voice separation (#88). Kept apart from guard_probes.py to
+stay within the 300-line limit. Each planted violation must fail for its stated reason; each
+mutation must turn its named test red."""
 
 from guard_probes import PROBE, Probe, _arch, _mutation, _probe
 
@@ -93,5 +94,44 @@ def report_mutations() -> list[Probe]:
     ]
 
 
+def _separation(name: str, change: tuple[str, str], expect: str) -> Probe:
+    """A mutation of media/separation.py that a test in test_separation.py must catch."""
+    path = "src/filmanalyser/media/separation.py"
+    return _mutation(name, path, change, "tests/unit/test_separation.py", expect)
+
+
+def separation_mutations() -> list[Probe]:
+    """Opt-in voice separation (DECISIONS #88): no download at run time, the same stem every run, a
+    verified model only, and never on a 5.1 film."""
+    command = "test_the_separation_command_uses_the_pinned_model_offline"
+    return [
+        _separation(
+            "separation may download its model (--repo removed)",
+            ('"--repo", str(model_dir), ', ""),
+            command,
+        ),
+        _separation(
+            "separation output made random (shifts removed)", ('"--shifts", "0",', ""), command
+        ),
+        _separation(
+            "separation model used without its check",
+            ("    verify_model_dir(model_dir, separation_pins() if pins is None else pins)\n", ""),
+            "test_the_separator_refuses_a_model_that_fails_its_check",
+        ),
+        _separation(
+            "separation model hash not compared",
+            ("if not hmac.compare_digest(actual, expected):", "if False:"),
+            "test_a_folder_that_does_not_match_is_refused",
+        ),
+        _mutation(
+            "5.1 film separated instead of using its centre channel",
+            "src/filmanalyser/pipeline/runner.py",
+            ("audio.channels == FIVE_ONE_CHANNELS:", "audio.channels == -1:"),
+            "tests/integration/test_separation_pipeline.py",
+            "test_a_five_one_film_uses_its_centre_channel_instead",
+        ),
+    ]
+
+
 def phase4_mutation_probes() -> list[Probe]:
-    return [*pipeline_mutations(), *report_mutations()]
+    return [*pipeline_mutations(), *report_mutations(), *separation_mutations()]

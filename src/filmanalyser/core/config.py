@@ -55,6 +55,10 @@ SILENCE_DBFS = -50.0  # a window quieter than this (RMS, dBFS) is silence
 MUSIC_FLATNESS = (
     0.2  # spectral flatness (0 pure tone, 1 white noise) below which non-speech is tonal
 )
+SEPARATION_BED_DBFS = -35.0  # opt-in voice separation runs on a chunk whose background is this loud
+SEPARATION_BATCH = 10  # chunks per separation run (the model loads once per run)
+SEPARATION_TIMEOUT_S = 3600.0  # one separation run must finish within this
+SEPARATION_MAX_MODEL_BYTES = 256 * 1024 * 1024  # the htdemucs weights are 84 MB
 LOUDNESS_BLOCK_S = 0.4  # BS.1770 gating block length
 LOUDNESS_HOP_S = 0.1  # block hop (75% overlap)
 LOUDNESS_OFFSET_LU = -0.691  # BS.1770 constant: loudness = offset + 10 log10(mean square)
@@ -63,7 +67,13 @@ LOUDNESS_REL_GATE_LU = -10.0  # then blocks more than this below the mean of the
 PEAK_FLOOR_DBFS = -120.0  # the sample peak of digital silence
 
 # The settings that decide what a chunk contains: part of the key a stored run is cached by.
-GEOMETRY_FIELDS = ("chunk_seconds", "overlap_seconds", "analysis_fps", "frame_width")
+GEOMETRY_FIELDS = (
+    "chunk_seconds",
+    "overlap_seconds",
+    "analysis_fps",
+    "frame_width",
+    "separate_voices",
+)
 
 _POSITIVE = ("chunk_seconds", "ram_budget_mb", "analysis_fps", "frame_width")
 
@@ -77,6 +87,8 @@ class Config:
     overlap_seconds: float = 2.0  # context a chunk reuses from the previous one (state carry)
     analysis_fps: float = 12.0  # decoder output rate; fixes cut-timing resolution (DECISIONS #33)
     frame_width: int = 160  # decoder output width in px (DECISIONS #33); height keeps the aspect
+    separate_voices: bool = False  # opt-in voice separation where music is loud (DECISIONS #88)
+    separation_model: str = ""  # folder of the pinned separation model (not part of the cache key)
 
     def __post_init__(self) -> None:
         for name in _POSITIVE:
@@ -88,10 +100,12 @@ class Config:
             raise _invalid("chunk_seconds")  # a chunk must hold at least one frame
         if self.frame_width % 2:
             raise _invalid("frame_width")  # video scaling needs even dimensions
+        if self.separate_voices and not self.separation_model:
+            raise _invalid("separation_model")  # separation needs its model folder
 
     def geometry(self) -> dict[str, float]:
         """The `GEOMETRY_FIELDS` and their values: what stored features were computed under."""
-        return {name: getattr(self, name) for name in GEOMETRY_FIELDS}
+        return {name: float(getattr(self, name)) for name in GEOMETRY_FIELDS}  # bools as 1.0 / 0.0
 
     @property
     def frames_per_chunk(self) -> int:

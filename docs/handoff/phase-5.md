@@ -272,3 +272,19 @@ Requested: address all open items. Status per item:
 
 ### Decisions added in this follow-up
 67 audio/picture alignment on the container clock · 68 surround weights and true peak · 69 over-full-scale decoded values
+
+## Follow-up: opt-in voice separation (branch `feat/speech-separation`, DECISIONS #88)
+
+Requested: the opt-in separation mode that runs only where music is present.
+
+| Item | What was done | Evidence |
+|---|---|---|
+| Mode | `filmanalyser film --out dir --separate-voices`. Off by default; part of the store key, so stores with and without it never mix | `test_separation.py` (setting, key), CLI run with the tool and model missing: exit 2 and 4 with their messages |
+| Only where music is present | A chunk is separated when its background (non-speech, non-silent median level) is at least -35 dBFS. 5.1 films are skipped (centre channel, #86) | AVA: 26 of 40 chunks chosen, recall 70.8% against 72.2% for all chunks; `test_separation_pipeline.py` (quiet clip never runs the tool; 5.1 skipped) |
+| No network at run time | Model fetched by `make separation-model`, pinned in `SEPARATION.sha256`, verified before each run, passed with `--repo` | `test_model_fetch.py`, `test_separation.py`; guard probes: `--repo` removed, check removed, hash not compared |
+| Repeatable output | Found during the work: Demucs's default random shift changed the stem between runs (up to 0.20). `--shifts 0` makes it repeat bit for bit; CPU and GPU agree to 3e-5 | Measured on one minute of Tears of Steel; guard probe: shifts removed |
+| Real model | `make separation-check` (needs `demucs` and the model) | Speech under a loud chord: 0% heard on the mix, 99% on the stem |
+| Accuracy | Through the pipeline | Tears of Steel stereo recall 48.7% to 59.3% (false 1.0% to 1.3%); AVA recall 56.1% to 68.1% (false 2.2% to 5.4%) |
+
+Tech debt and limits: Demucs and PyTorch are installed by the user (`uv tool install demucs==4.1.0`), not locked by the project; CI tests the path with a stand-in, and the real model only runs locally. Each chunk's window is decoded and voice-checked once more to choose it (cheap next to separation). Singing is read as speech. Run time is about 8 times real time on an Apple M4 GPU, slower on CPU only.
+

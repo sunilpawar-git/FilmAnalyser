@@ -32,7 +32,7 @@ from filmanalyser.extractors.speech_music import MUSIC, SILENCE, SPEECH, classif
 from filmanalyser.media.audio import PcmFormat, audio_stream, audio_window
 from filmanalyser.media.paths import validate_input_path
 from filmanalyser.media.probe import probe_video
-from filmanalyser.pipeline.runner import chunk_stream
+from filmanalyser.pipeline.runner import chunk_stream, default_model_dir, separator_for
 from label_format import (
     Labels,
     Score,
@@ -61,11 +61,16 @@ __all__ = [
 SEGMENT_S = 60.0  # film-level loudness is computed in segments this long (bounded memory)
 
 
-def window_predictions(path: Path) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int64]]:
-    """Window start times (film seconds) and the classifier's label for every core window."""
+def window_predictions(
+    path: Path, config: Config | None = None
+) -> tuple[npt.NDArray[np.float64], npt.NDArray[np.int64]]:
+    """Window start times (film seconds) and the classifier's label for every core window. With
+    `config.separate_voices`, the voice is also heard on the separated stem (DECISIONS #88)."""
+    settings = Config() if config is None else config
     times: list[float] = []
     labels: list[int] = []
-    for chunk in chunk_stream(path, Config(), 0, audio_stream(path)):
+    stream = chunk_stream(path, settings, 0, audio_stream(path), separator_for(settings))
+    for chunk in stream:
         if chunk.audio is None or chunk.audio.voice is None:
             continue
         mono = np.mean(chunk.audio.samples, axis=1, dtype=np.float64)
@@ -131,9 +136,9 @@ def film_loudness(path: Path) -> tuple[float | None, float | None]:
     return lufs, true_peak
 
 
-def report(labels: Labels, film: Path, tolerance: float) -> list[str]:
+def report(labels: Labels, film: Path, tolerance: float, config: Config | None = None) -> list[str]:
     lines = [f"film: {film.name}"]
-    times, predicted = window_predictions(film)
+    times, predicted = window_predictions(film, config)
     if times.size:
         speech = score_kind(labels, "speech", times, predicted == SPEECH)
         music = score_kind(labels, "music", times, predicted == MUSIC)
@@ -178,14 +183,17 @@ def main(argv: list[str]) -> int:
     parser.add_argument("film", type=Path)
     parser.add_argument("labels", type=Path)
     parser.add_argument("--cut-tolerance", type=float, default=0.25)
+    parser.add_argument("--separate-voices", action="store_true")
+    parser.add_argument("--separation-model", default=str(default_model_dir()))
     args = parser.parse_args(argv)
+    config = Config(separate_voices=args.separate_voices, separation_model=args.separation_model)
     film = validate_input_path(args.film)
     try:
         labels = parse_labels(args.labels.read_text(encoding="utf-8"))
     except (OSError, ValueError) as error:
         print(f"labels not read: {error}", file=sys.stderr)
         return 2
-    for line in report(labels, film, args.cut_tolerance):
+    for line in report(labels, film, args.cut_tolerance, config):
         print(line)
     return 0
 
