@@ -71,7 +71,9 @@ def _run(args: argparse.Namespace, strings: Strings) -> int:
     store = analyse(film, out, config)
     view = build_view(store.read_columns(), film=film.name)
     report.write_text(render_report(view, strings, ColorTokens.load()), encoding="utf-8")
-    message = strings.text("cli.done", film=film.name, cuts=view.total_cuts, report=report.name)
+    message = strings.text(
+        "cli.done", film=film.name, cuts=view.overview.total_cuts, report=report.name
+    )
     print(message)
     return 0
 
