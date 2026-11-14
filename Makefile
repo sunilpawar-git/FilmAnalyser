@@ -6,9 +6,9 @@ RUN := $(UV) run --locked
 AUDIT_REQS := .cache/audit-requirements.txt
 # Permissive licences only, plus MPL-2.0 (file-level copyleft, dev tooling only). The last entry
 # is numpy's exact compound expression: every part is permissive (DECISIONS #33).
-LICENSE_ALLOW := MIT License;MIT;BSD License;3-Clause BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Python Software Foundation License;PSF-2.0;ISC License (ISCL);MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0
+LICENSE_ALLOW := MIT License;MIT;BSD License;3-Clause BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Python Software Foundation License;PSF-2.0;ISC License (ISCL);MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);0BSD;BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0
 
-.PHONY: help sync hooks lint typecheck test security audit licenses secrets build guards check ci nightly real-clip models separation-model separation-check pr ship tag-phase clean
+.PHONY: help sync hooks lint typecheck test security audit licenses secrets build guards check ci sbom changelog release-assets nightly real-clip models separation-model separation-check pr ship tag-phase clean
 
 help:
 	@grep -E '^[a-z-]+:.*##' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
@@ -70,6 +70,21 @@ separation-check: ## real voice-separation test: needs demucs on PATH and make s
 
 real-clip: ## real footage smoke test: FILMANALYSER_REAL_CLIP=/path/to/clip.mov make real-clip
 	$(RUN) pytest -m real_clip --no-cov
+
+# ---- release (DECISIONS #105): what .github/workflows/release.yml runs on a v* tag
+SBOM := dist/filmanalyser-sbom.cdx.json
+SBOM_REQS := .cache/sbom-requirements.txt
+
+sbom: ## CycloneDX SBOM of the runtime dependencies, from the lock file
+	mkdir -p .cache dist
+	$(UV) export --locked --no-dev --no-emit-project --format requirements-txt -o $(SBOM_REQS) >/dev/null
+	$(RUN) cyclonedx-py requirements --of JSON --sv 1.6 -o $(SBOM) $(SBOM_REQS)
+
+changelog: ## regenerate CHANGELOG.md from Conventional Commits
+	$(RUN) cz changelog
+
+release-assets: build sbom ## wheel + SBOM + checksums in dist/ (what a release publishes)
+	cd dist && shasum -a 256 *.whl *.json > SHA256SUMS
 
 # ---- per-feature flow (DECISIONS #48): one branch and one PR per feature, merged by GitHub when green
 BASE ?= main
