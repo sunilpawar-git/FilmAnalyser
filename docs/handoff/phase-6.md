@@ -42,6 +42,20 @@ Run with `scripts/timeline_report.py` on stores made by the CLI with the default
 
 Only The Odyssey is long enough for the specified analysis. As an exploration, Tears of Steel was re-run with 10 s chunks (73 chunks, window 50 s): still no break (best inside a zone: 1.05 and 0.84); two plateaus (8:50 to 9:40; 10:30 to 11:40, which has no cuts); the strongest candidate overall (1.27, 1:00) lies outside both zones. These are the numbers; they are not claimed to be right or wrong acts. The threshold was not lowered to make a break appear.
 
+## Five-film run against unverified times (added after review; DECISIONS #94)
+
+Run with the CLI at default settings on Moonrise Kingdom, Kill Bill Vol. 1 and 2, Licorice Pizza and Obsession (2026), then `scripts/timeline_report.py`. Expected times were an AI-written answer, not checked by the owner or against a source.
+
+| Film | Expected breaks | Reported (1.5) | Best in-zone candidates (score) | Tension max | Expected climax |
+|---|---|---|---|---|---|
+| Moonrise Kingdom | 0:22, 1:07 | none | 0:34 (0.95), 1:24 (1.30) | 1:21 (z 2.11) | 1:21 |
+| Kill Bill Vol. 1 | 0:34, 1:13 | none | 0:18 (1.02), 1:28 (1.15) | 1:20 (1.61) | 1:36 |
+| Kill Bill Vol. 2 | 0:36, 1:36 | none | 0:45 (1.12), 1:37 (1.12) | 1:20 (1.37) | 2:04 |
+| Obsession (2026) | 0:25, 1:22 | none | 0:30 (0.99), 1:20 (1.05) | 0:33 (1.25) | 1:36 |
+| Licorice Pizza | none | 1:36 (1.57) | 0:30 (1.27), 1:36 (1.57) | 0:34 (1.54) | 2:02 |
+
+Outcome: not validated, P6-1 and P6-2 stay open. No threshold or code was changed.
+
 ## 1. Tech debt incurred and found, and 2. exact steps taken to resolve each item
 
 | # | Debt (found during the phase) | Resolution |
