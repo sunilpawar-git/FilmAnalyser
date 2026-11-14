@@ -88,7 +88,7 @@ def test_a_cut_on_the_first_core_frame_is_counted_once_in_its_own_chunk() -> Non
 
 def test_extractor_is_registered_under_its_feature_names() -> None:
     assert EXTRACTOR.name == "shot_cuts"
-    assert EXTRACTOR.features == ("cuts", "max_diff")
+    assert EXTRACTOR.features == ("cuts", "gradual", "max_diff")
 
 
 def _whole_and_chunked(

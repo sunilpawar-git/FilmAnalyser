@@ -21,6 +21,14 @@ HASH_BLOCK_BYTES = 1024 * 1024  # the input film is hashed in blocks this big, n
 # truth (DECISIONS #57); any change is a new decision.
 CUT_DISTANCE = 0.40  # histogram distance between consecutive frames (0..1) that counts as a cut
 HIST_BINS = 16  # soft histogram bins per colour channel (a pixel splits between its two nearest)
+GRADUAL_FLOOR = (
+    0.05  # a frame distance above this is part of a possible gradual transition (DECISIONS #79)
+)
+GRADUAL_MIN_FRAMES = 4  # a gradual transition lasts at least this many analysis frames
+GRADUAL_SUM = (
+    0.5  # and its summed frame distances reach this (a dissolve measured about 1.2 per second)
+)
+CUT_MERGE_FRAMES = 3  # cut spikes closer than this are one cut: the strongest is kept
 LETTERBOX_LUMA = 0.06  # a row darker than this (0..1, mean luma over the chunk) is a black bar
 LUMA_WEIGHTS = (0.2126, 0.7152, 0.0722)  # ITU-R BT.709 luma coefficients for R, G, B
 EXTRACT_BUDGET_FRACTION = (
