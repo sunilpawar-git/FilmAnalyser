@@ -1,6 +1,6 @@
 # Phase 6 handoff: Timeline analysis (the stitching)
 
-**Status: built on `feat/phase-6-analysis`, awaiting your approval before merge.** `make check` exits 0 on this tree (911 passed, 7 deselected; log at the end). **Three items are open** and are listed as P6-1 to P6-3 in `EXECUTION_PLAN.md`: the act-break, tension, pacing and flag rules are tested on constructed timelines only, and no real film produced an act break.
+**Status: built on `feat/phase-6-analysis`, awaiting your approval before merge.** `make check` exits 0 on this tree (925 passed, 7 deselected; log at the end, re-run after closing P6-3). **Two items are open** and are listed as P6-1 and P6-2 in `EXECUTION_PLAN.md`: the act-break, tension, pacing and flag rules are tested on constructed timelines only, and no real film produced an act break. Both need the owner's own act breaks and climaxes for films they know. P6-3 (short films) is closed: a film too short to judge says so (DECISIONS #93).
 
 ## What was built
 
@@ -36,9 +36,9 @@ Run with `scripts/timeline_report.py` on stores made by the CLI with the default
 | Film | Chunks | Boundaries scored | Act breaks | Tension peak | Pacing plateaus | Flags |
 |---|---|---|---|---|---|---|
 | The Odyssey, 5.1 (2 h 52 min) | 173 | 164 | none (best in zone 1: 1.15 at 0:31, 18%; zone 2: 1.27 at 2:21, 82%; threshold 1.5) | 1:51 (z 3.49) | 4 (0:17 to 0:24; 2:13 to 2:18; 2:28 to 2:33; 2:46 to the end at 0 cuts per minute) | clipping 8, fast_cutting 1 (1:50 to 1:53), long_take 1 (2:46 to the end), loud 1 (1:51), quiet 1 (0:32) |
-| Tears of Steel, stereo (12 min) | 12 | 3 | none | none | 0 | clipping 2 |
-| Tears of Steel, 5.1 (12 min) | 12 | 3 | none | none | 0 | fast_cutting 1 |
-| Stitched film (80 s, no audio) | 2 | 0 | none (too short) | none | 0 | none |
+| Tears of Steel, stereo (12 min) | 12 | 3 | none: both zones too short to judge (needs 13:00) | none | 0 | clipping 2 |
+| Tears of Steel, 5.1 (12 min) | 12 | 3 | none: both zones too short to judge (needs 13:00) | none | 0 | fast_cutting 1 |
+| Stitched film (80 s, no audio) | 2 | 0 | none: both zones too short to judge (needs 13:00) | none | 0 | none |
 
 Only The Odyssey is long enough for the specified analysis. As an exploration, Tears of Steel was re-run with 10 s chunks (73 chunks, window 50 s): still no break (best inside a zone: 1.05 and 0.84); two plateaus (8:50 to 9:40; 10:30 to 11:40, which has no cuts); the strongest candidate overall (1.27, 1:00) lies outside both zones. These are the numbers; they are not claimed to be right or wrong acts. The threshold was not lowered to make a break appear.
 
@@ -65,7 +65,7 @@ Only The Odyssey is long enough for the specified analysis. As an exploration, T
 
 - **P6-1** Act breaks are unvalidated on real films; `ACT_MIN_SCORE` is calibrated on synthetic data only; The Odyssey gives none.
 - **P6-2** Tension peak, plateaus and flags are unvalidated against a real climax or any human judgement.
-- **P6-3** Films under 10 minutes cannot be scored at the default chunk size; the choice is for Phase 8.
+- ~~**P6-3**~~ Closed after review (DECISIONS #93): a film too short to judge a zone lists it in `unscored_zones` and states `min_film_s` (13:00 at 60 s chunks); the chunk is not scaled. Tests, golden-file update (two new fields, nothing else moved) and a guard mutation.
 
 ## Choices I made that you may want to redirect
 
@@ -92,28 +92,102 @@ platform darwin -- Python 3.12.14, pytest-9.2.0, pluggy-1.7.0
 rootdir: /Users/sunil/Downloads/FilmAnalyser
 configfile: pyproject.toml
 plugins: platformdirs-4.14.5, hypothesis-6.170.15, cov-7.1.0
-collected 918 items / 7 deselected / 911 selected
+collected 932 items / 7 deselected / 925 selected
 
+tests/unit/test_act_breaks.py .......................................... [  4%]
+................................................................         [ 11%]
+tests/unit/test_analysis_golden.py ..                                    [ 11%]
+tests/unit/test_audio_argv.py .........................                  [ 14%]
+tests/unit/test_audio_chunk.py ...............                           [ 16%]
+tests/unit/test_chunk.py ............................                    [ 19%]
+tests/unit/test_chunker.py ..............                                [ 20%]
+tests/unit/test_color.py .........                                       [ 21%]
+tests/unit/test_config.py ................                               [ 23%]
+tests/unit/test_dialogue_signal.py ...                                   [ 23%]
+tests/unit/test_ebu_reference.py .............                           [ 24%]
+tests/unit/test_errors.py .........                                      [ 25%]
+tests/unit/test_evaluate_labels.py ................                      [ 27%]
+tests/unit/test_events.py ...............                                [ 29%]
+tests/unit/test_feature_store.py ...........................             [ 32%]
+tests/unit/test_ffmpeg_stream.py ..........                              [ 33%]
+tests/unit/test_files.py .........................                       [ 36%]
+tests/unit/test_flags.py .............                                   [ 37%]
+tests/unit/test_gradual.py ................                              [ 39%]
+tests/unit/test_letterbox.py .....                                       [ 39%]
+tests/unit/test_loudness.py ...........................                  [ 42%]
+tests/unit/test_manifest.py .............................                [ 45%]
+tests/unit/test_model_integrity.py .................                     [ 47%]
+tests/unit/test_pacing.py .........                                      [ 48%]
+tests/unit/test_paths.py ................                                [ 50%]
+tests/unit/test_probe.py .................                               [ 52%]
+tests/unit/test_registry.py .....................                        [ 54%]
+tests/unit/test_renderer.py .......                                      [ 55%]
+tests/unit/test_resources.py ..........................                  [ 57%]
+tests/unit/test_runner.py .........                                      [ 58%]
+tests/unit/test_schema.py ..............................                 [ 62%]
+tests/unit/test_separation.py ....................                       [ 64%]
+tests/unit/test_shot_cuts.py ..........                                  [ 65%]
+tests/unit/test_speech_music.py .............                            [ 66%]
+tests/unit/test_tension.py ............................................. [ 71%]
+..                                                                       [ 71%]
+tests/unit/test_timeline.py ........................                     [ 74%]
+tests/unit/test_viewmodel.py ......                                      [ 75%]
+tests/architecture/test_analysis_purity.py .........                     [ 76%]
+tests/architecture/test_atomic_writes.py ....                            [ 76%]
+tests/architecture/test_ci_workflow.py ..........                        [ 77%]
+tests/architecture/test_color_contrast.py ..........................     [ 80%]
+tests/architecture/test_error_keys.py ....                               [ 80%]
+tests/architecture/test_file_size.py ......                              [ 81%]
+tests/architecture/test_frozen_dataclasses.py ....                       [ 81%]
+tests/architecture/test_function_limits.py ...                           [ 82%]
+tests/architecture/test_layer_imports.py ............                    [ 83%]
+tests/architecture/test_model_fetch.py .........                         [ 84%]
+tests/architecture/test_model_loading.py ..                              [ 84%]
+tests/architecture/test_nightly_workflow.py ........                     [ 85%]
+tests/architecture/test_no_hardcoded_colors.py ........                  [ 86%]
+tests/architecture/test_no_hardcoded_strings.py ..........               [ 87%]
+tests/architecture/test_no_skips.py ...                                  [ 87%]
+tests/architecture/test_security_patterns.py ..............              [ 89%]
+tests/architecture/test_subprocess_argv.py .....                         [ 89%]
+tests/integration/test_analysis_pipeline.py .....                        [ 90%]
+tests/integration/test_audio_decode.py ..........                        [ 91%]
+tests/integration/test_audio_offset.py .....                             [ 92%]
+tests/integration/test_av_pipeline.py .....                              [ 92%]
+tests/integration/test_cli.py .....                                      [ 93%]
+tests/integration/test_decode_stream.py ................                 [ 94%]
+tests/integration/test_determinism.py ...                                [ 95%]
+tests/integration/test_evaluate_labels.py ...                            [ 95%]
+tests/integration/test_extract_budget.py .                               [ 95%]
+tests/integration/test_ffmpeg_version.py .                               [ 95%]
+tests/integration/test_gradual_detection.py .                            [ 95%]
+tests/integration/test_hires_decode.py ..                                [ 96%]
+tests/integration/test_memory_flat.py ...                                [ 96%]
+tests/integration/test_resume.py ......                                  [ 97%]
+tests/integration/test_resume_grid.py ..                                 [ 97%]
+tests/integration/test_separation_pipeline.py ........                   [ 98%]
+tests/integration/test_vad.py ..........                                 [ 99%]
+tests/integration/test_video_pipeline.py ......                          [ 99%]
+tests/integration/test_wheel_resources.py .                              [100%]
 
 ================================ tests coverage ================================
 ______________ coverage: platform darwin, python 3.12.14-final-0 _______________
 
 Name    Stmts   Miss Branch BrPart  Cover   Missing
 ---------------------------------------------------
-TOTAL    2227      0    420      0   100%
+TOTAL    2244      0    424      0   100%
 
 50 files skipped due to complete coverage.
 Required test coverage of 90% reached. Total coverage: 100.00%
-================= 911 passed, 7 deselected in 62.13s (0:01:02) =================
+================= 925 passed, 7 deselected in 63.18s (0:01:03) =================
 mkdir -p .cache
 uv export --locked --no-emit-project --format requirements-txt -o .cache/audit-requirements.txt >/dev/null
-Resolved 73 packages in 3ms
+Resolved 73 packages in 2ms
 uv run --locked pip-audit --require-hashes --disable-pip -r .cache/audit-requirements.txt
 No known vulnerabilities found
 uv run --locked pip-licenses --allow-only="MIT License;MIT;BSD License;3-Clause BSD License;BSD-2-Clause;BSD-3-Clause;Apache Software License;Apache-2.0;Apache-2.0 OR BSD-2-Clause;Python Software Foundation License;PSF-2.0;ISC License (ISCL);MPL-2.0;Mozilla Public License 2.0 (MPL 2.0);The Unlicense (Unlicense);BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0" --format=plain >/dev/null
 gitleaks dir . --no-banner --redact -v
-5:38PM INF scanned ~7153358 bytes (7.15 MB) in 424ms
-5:38PM INF no leaks found
+7:01PM INF scanned ~7182449 bytes (7.18 MB) in 474ms
+7:01PM INF no leaks found
 uv run --locked bandit -q -r src scripts -c pyproject.toml
 uv build --wheel --out-dir dist
 Building wheel...
@@ -177,6 +251,7 @@ uv run --locked python scripts/guard_selftest.py
   ok   first zone widened to the film's start (changes outside the zone reported): caught
   ok   break threshold ignored: caught
   ok   close candidates not merged: caught
+  ok   a short film reported as judged (too short read as nothing found): caught
   ok   template literal text: caught
   ok   template |safe output: caught
   ok   committed secret (gitleaks): caught
