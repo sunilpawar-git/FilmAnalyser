@@ -74,10 +74,13 @@ results has been checked against anything a person has judged.
   threshold and inside the range noise reaches, so no break is reported. The threshold was not lowered
   to produce one. Whether the film has no break in these zones, or has breaks the features cannot see,
   is not known.
-- **Short films cannot be scored at the default chunk size.** A boundary needs 5 chunks on each side,
-  so a film under 10 minutes has no score at all, and a break needs a 10-minute gap. The two Tears of
-  Steel files (12 min, 12 chunks) score 3 boundaries and no break; the 80 s stitched film has 2
-  chunks and none. At 10 s chunks (73 chunks) Tears of Steel gives no break either: the best
+- **Short films are reported as too short, not as having no acts** (DECISIONS #93). A boundary needs
+  5 chunks on each side, so at the default 60 s chunk a film must run 13 minutes before both zones
+  hold a boundary that can be scored; a shorter film's result lists the zones it could not judge
+  (`unscored_zones`) and the length it would need (`min_film_s`). The chunk is not scaled down for
+  short films, so a short film gets no act analysis at all. The two Tears of Steel files (12:14,
+  12 chunks) score 3 boundaries, none inside a zone, and report both zones as too short to judge
+  (needs 13:00); the 80 s stitched film has 2 chunks and reports the same. At 10 s chunks (73 chunks) Tears of Steel gives no break either: the best
   candidates inside the zones score 1.05 (zone 1, at 3:00) and 0.84 (zone 2, at 10:30) for stereo, and
   within 0.05 of those for 5.1. The strongest candidate overall (1.27 at 1:00, 8%) lies outside both
   zones. The window is then 50 s, not 5 min, so this is an exploration, not the specified analysis.
