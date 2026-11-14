@@ -54,6 +54,54 @@ output can and cannot be trusted for.
 - **A tone that stops abruptly rings for about 50 ms** in the K-weighting filter, and BS.1770 counts
   that block. A silent passage right after an abrupt stop can read well above the -70 LUFS floor.
 
+## Timeline analysis (act breaks, tension, pacing, flags)
+
+Evidence is synthetic timelines and four local films; see DECISIONS #90 to #92. None of these
+results has been checked against anything a person has judged.
+
+- **No ground truth for act structure.** No film in this repository has labelled act breaks. What is
+  tested is that the rules find the change points built into constructed timelines, and not noise.
+  Whether a reported break is an act break is not known, and the output must be read as "where the
+  film's picture and sound changed most", not as acts.
+- **Thresholds calibrated on synthetic data only.** `ACT_MIN_SCORE` (1.5) and `TENSION_MIN_PEAK_Z`
+  (3.0) were set from noise films and single steps (largest noise score 1.36 over 2,400 films, a step
+  1.9 or more; largest noise tension 2.75). Not calibrated on real footage: real features are
+  correlated and heavy-tailed, so noise-level scores on a film may be higher than on the synthetic
+  noise. The other thresholds (pacing plateau, flag limits, zones, window, smoothing, merge gap) are
+  chosen by reasoning and tested on constructed cases; none was tuned on real footage.
+- **Real-film result: no break found.** On The Odyssey (2 h 52 min, 5.1, 173 chunks) the strongest
+  candidate in zone 1 scored 1.15 (at 0:31, 18%) and in zone 2 1.27 (at 2:21, 82%), both below the
+  threshold and inside the range noise reaches, so no break is reported. The threshold was not lowered
+  to produce one. Whether the film has no break in these zones, or has breaks the features cannot see,
+  is not known.
+- **Short films cannot be scored at the default chunk size.** A boundary needs 5 chunks on each side,
+  so a film under 10 minutes has no score at all, and a break needs a 10-minute gap. The two Tears of
+  Steel files (12 min, 12 chunks) score 3 boundaries and no break; the 80 s stitched film has 2
+  chunks and none. At 10 s chunks (73 chunks) Tears of Steel gives no break either: the best
+  candidates inside the zones score 1.05 (zone 1, at 3:00) and 0.84 (zone 2, at 10:30) for stereo, and
+  within 0.05 of those for 5.1. The strongest candidate overall (1.27 at 1:00, 8%) lies outside both
+  zones. The window is then 50 s, not 5 min, so this is an exploration, not the specified analysis.
+- **A change in a minority of features scores low.** The score divides by the square root of the
+  number of features, so a step in one feature of nine scores 0.63, and a film that climbs in equal
+  stages (steps of 0, 3, 6) scores each stage 1.23, below the threshold. Both are kept by design
+  and tested. A break needs several features to move together relative to the film's own spread.
+- **Film-relative, so a film with no structure is stretched.** Z-scores use the film's own mean and
+  spread; a nearly constant feature still fills the unit scale. The threshold is what stops noise
+  from becoming a break.
+- **A film without audio is analysed on the picture alone** (cut rate and four colour features) and
+  says so (`audio_used`). The letterbox share is not used. Loudness at the -70 LUFS floor counts as
+  missing, so a silent stretch is invisible in loudness (it still shows in the silence share).
+- **Tension is cut rate and loudness only** (a mean of their z-scores). It is a proxy that follows
+  how fast and how loud a film is, not what happens. On The Odyssey the peak is at 1:51 (z 3.5), the
+  same minute as the strongest fast-cutting flag; this is an observation, not a check against the
+  film's climax, which Phase 8 does.
+- **Pacing plateaus are relative to the film's spread.** A few huge bursts widen the band, so a
+  plateau can run a chunk into its neighbours. The Odyssey has 4 (the last, 2:46 to the end at 0 cuts
+  per minute, is the end credits).
+- **Flags are rules, not findings.** `clipping` is a true peak at or above 0 dBTP (8 chunks on The
+  Odyssey, peaks of +0.06 to +1.06 dBTP); `quiet` is a share of windows below -50 dBFS; `long_take` is three
+  chunks in a row without a cut or transition (so credits and static title cards are flagged).
+
 ## Alignment and sync
 
 - **Sound and picture are aligned on the container clock** (DECISIONS #67), with a silent lead when
