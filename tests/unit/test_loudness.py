@@ -171,7 +171,7 @@ def _chunk(samples: np.ndarray, context_s: float = 0.0) -> Chunk:
     audio = Audio(rate=RATE, start_s=0.0, samples=samples)
     return Chunk(
         index=0, start_s=context_s, end_s=context_s + core_s, fps=2.0, frames=frames,
-        context_frames=context, audio=audio,
+        context_frames=context, audio=audio, audio_hires=audio,
     )  # fmt: skip
 
 

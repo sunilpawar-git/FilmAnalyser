@@ -13,7 +13,7 @@ import pytest
 from filmanalyser.core.chunk import Chunk
 from filmanalyser.core.config import AUDIO_RATE, Config
 from filmanalyser.core.errors import DecodeError
-from filmanalyser.media.audio import audio_channels, decode_window
+from filmanalyser.media.audio import PcmFormat, audio_channels, decode_window
 from filmanalyser.media.ffmpeg_stream import decode_chunks
 from tests.fixtures.make_synthetic import av_clip_argv, make_av_clip, make_silent_clip
 
@@ -29,7 +29,7 @@ def _first_loud(samples: np.ndarray) -> int:
 
 def test_the_window_starts_on_the_film_clock(tmp_path: Path) -> None:
     clip = make_av_clip(tmp_path / "tone.mp4", 6.0, TONE)
-    window = decode_window(clip, start_s=1.5, duration_s=2.0, channels=1)
+    window = decode_window(clip, 1.5, 2.0, PcmFormat(1, AUDIO_RATE))
     assert window.dtype == np.float32
     assert window.shape[1] == 1
     assert abs(len(window) - 2.0 * AUDIO_RATE) <= TOLERANCE_SAMPLES
@@ -39,14 +39,14 @@ def test_the_window_starts_on_the_film_clock(tmp_path: Path) -> None:
 
 def test_silence_in_the_window_is_silent(tmp_path: Path) -> None:
     clip = make_av_clip(tmp_path / "tone.mp4", 6.0, TONE)
-    window = decode_window(clip, start_s=0.0, duration_s=1.5, channels=1)
+    window = decode_window(clip, 0.0, 1.5, PcmFormat(1, AUDIO_RATE))
     assert float(np.max(np.abs(window))) < 1e-4
 
 
 def test_stereo_keeps_its_two_channels(tmp_path: Path) -> None:
     clip = make_av_clip(tmp_path / "left.mp4", 4.0, f"{TONE}|0*t", stereo=True)
     assert audio_channels(clip) == 2
-    window = decode_window(clip, start_s=2.0, duration_s=1.0, channels=2)
+    window = decode_window(clip, 2.0, 1.0, PcmFormat(2, AUDIO_RATE))
     assert window.shape[1] == 2
     assert float(np.max(np.abs(window[:, 0]))) > 0.1  # the left channel carries the tone
     assert float(np.max(np.abs(window[:, 1]))) < 1e-4  # the right channel is silent
@@ -92,7 +92,7 @@ def test_a_file_that_is_not_media_fails_the_audio_decode(tmp_path: Path) -> None
     not_media = tmp_path / "notes.mp4"
     not_media.write_text("this is text, not a film", encoding="utf-8")
     with pytest.raises(DecodeError) as info:
-        decode_window(not_media, 0.0, 1.0, 1)
+        decode_window(not_media, 0.0, 1.0, PcmFormat(1, AUDIO_RATE))
     assert info.value.key == "error.decode.audio_failed"
 
 
@@ -103,7 +103,7 @@ def test_five_point_one_keeps_six_channels_in_their_order(tmp_path: Path) -> Non
     out = tmp_path / "surround.mp4"
     subprocess.run(av_clip_argv(out, 4.0, expr, layout="5.1"), check=True)
     assert audio_channels(out) == 6
-    window = decode_window(out, start_s=1.5, duration_s=2.0, channels=6)
+    window = decode_window(out, 1.5, 2.0, PcmFormat(6, AUDIO_RATE))
     assert window.shape[1] == 6
     assert float(np.max(np.abs(window[:, 0]))) > 0.1  # front left has the tone
     assert float(np.max(np.abs(window[:, 3]))) < 1e-4  # LFE is silent

@@ -1,7 +1,8 @@
-"""Audio decoding (DECISIONS #60). ffprobe says how many channels a film's first audio track has;
-ffmpeg then decodes each chunk's window on its own, as 32-bit float PCM at AUDIO_RATE. One process
-per window keeps no state between chunks, so a resumed run gets the same audio as an uninterrupted
-one, and memory is bounded by the chunk.
+"""Audio decoding (DECISIONS #60, #72). ffprobe says how many channels a film's first audio track
+has. ffmpeg then decodes each chunk's window on its own, as 32-bit float PCM: at AUDIO_RATE for
+speech and at AUDIO_HIRES_RATE for loudness and true peak. One process per window keeps no state
+between chunks, so a resumed run gets the same audio as an uninterrupted one, and memory is bounded
+by the chunk.
 
 Timing: the window starts at the chunk's first frame (film time, from the input seek). A track that
 ends before the picture reads as silence after its end, so every window has exactly the length the
@@ -25,7 +26,6 @@ import numpy as np
 from filmanalyser.core.chunk import Audio, Chunk, Samples
 from filmanalyser.core.config import (
     AUDIO_MAX_CHANNELS,
-    AUDIO_RATE,
     AUDIO_TIMEOUT_S,
     PROBE_MAX_OUTPUT_BYTES,
     PROBE_TIMEOUT_S,
@@ -117,19 +117,35 @@ def audio_channels(path: Path) -> int | None:
     return None if stream is None else stream.channels
 
 
+@dataclass(frozen=True)
+class PcmFormat:
+    """What a window is decoded to: its channel count and sample rate (float32 PCM)."""
+
+    channels: int
+    rate: int
+
+
+@dataclass(frozen=True)
+class Clock:
+    """Where the picture and the audio track start on the container clock (DECISIONS #67)."""
+
+    picture_start_s: float
+    audio_start_s: float
+
+
 def decode_argv(
-    ffmpeg: str, path: Path, start_s: float, duration_s: float, channels: int
+    ffmpeg: str, path: Path, start_s: float, duration_s: float, pcm: PcmFormat
 ) -> list[str]:
     """The one command line that decodes a window of audio to raw float32 on stdout."""
     if not (math.isfinite(start_s) and start_s >= 0 and math.isfinite(duration_s)):
         raise _bad_window()
-    if duration_s <= 0 or not 1 <= channels <= AUDIO_MAX_CHANNELS:
+    if duration_s <= 0 or not 1 <= pcm.channels <= AUDIO_MAX_CHANNELS or pcm.rate <= 0:
         raise _bad_window()
     return [
         ffmpeg, "-nostdin", "-v", "error",
         "-ss", f"{start_s:.6f}", "-protocol_whitelist", "file", "-i", f"file:{path}",
         "-t", f"{duration_s:.6f}", "-map", "0:a:0", "-vn", "-sn", "-dn",
-        "-ac", str(channels), "-ar", str(AUDIO_RATE),
+        "-ac", str(pcm.channels), "-ar", str(pcm.rate),
         "-f", "f32le", "-acodec", "pcm_f32le", "pipe:1",
     ]  # fmt: skip
 
@@ -145,9 +161,9 @@ def _fit(raw: bytes, count: int, channels: int) -> Samples:
     return samples
 
 
-def decode_window(path: Path, start_s: float, duration_s: float, channels: int) -> Samples:
+def decode_window(path: Path, start_s: float, duration_s: float, pcm: PcmFormat) -> Samples:
     """`duration_s` of the film's audio from `start_s` (film time), as float32 (count, channels)."""
-    argv = decode_argv(find_tool("ffmpeg"), path, start_s, duration_s, channels)
+    argv = decode_argv(find_tool("ffmpeg"), path, start_s, duration_s, pcm)
     try:
         done = subprocess.run(
             argv,
@@ -161,42 +177,51 @@ def decode_window(path: Path, start_s: float, duration_s: float, channels: int) 
     if done.returncode != 0:
         detail = scrub_stderr(done.stderr, path, STDERR_LIMIT_BYTES)
         raise DecodeError(detail, key="error.decode.audio_failed", name=path.name)
-    count = max(1, round(duration_s * AUDIO_RATE))
-    return _fit(done.stdout, count, channels)
+    count = max(1, round(duration_s * pcm.rate))
+    return _fit(done.stdout, count, pcm.channels)
 
 
 def audio_window(
-    path: Path, container_start_s: float, audio_start_s: float, duration_s: float, channels: int
+    path: Path, container_start_s: float, audio_start_s: float, duration_s: float, pcm: PcmFormat
 ) -> Samples:
-    """`duration_s` of audio starting at `container_start_s` on the container clock (where the
-    picture's film time 0 is shifted by the picture's own start). A track that begins after that
-    point (`audio_start_s`) leaves a lead of silence: ffmpeg's seek works on the container clock,
-    so nothing before the track's first sample exists to decode."""
-    count = max(1, round(duration_s * AUDIO_RATE))
-    lead = min(count, round(max(0.0, audio_start_s - container_start_s) * AUDIO_RATE))
-    out = np.zeros((count, channels), dtype=np.float32)
+    """`duration_s` of audio starting at `container_start_s` on the container clock. A track that
+    begins after that point (`audio_start_s`) leaves a lead of silence: ffmpeg's seek works on the
+    container clock, so nothing before the track's first sample exists to decode."""
+    count = max(1, round(duration_s * pcm.rate))
+    lead = min(count, round(max(0.0, audio_start_s - container_start_s) * pcm.rate))
+    out = np.zeros((count, pcm.channels), dtype=np.float32)
     if count > lead:
-        decode_from = container_start_s + lead / AUDIO_RATE
-        out[lead:] = decode_window(path, decode_from, (count - lead) / AUDIO_RATE, channels)
+        decode_from = container_start_s + lead / pcm.rate
+        out[lead:] = decode_window(path, decode_from, (count - lead) / pcm.rate, pcm)
     return out
 
 
-def attach_audio(
-    chunks: Iterable[Chunk],
-    path: Path,
-    channels: int,
-    picture_start_s: float = 0.0,
-    audio_start_s: float = 0.0,
+def _attach(
+    chunks: Iterable[Chunk], path: Path, pcm: PcmFormat, clock: Clock, hires: bool
 ) -> Iterator[Chunk]:
-    """Each chunk with its audio window: the same span as its frames, overlap included.
-
-    Film time t is container time `picture_start_s + t` (the picture's own start is removed by the
-    decoder). The audio track's first sample is at container time `audio_start_s`. Both times share
-    the container clock, so sound and picture stay aligned whatever the two streams' starts are
-    (DECISIONS #67)."""
+    """Each chunk with an audio window in `field`: the same span as its frames, overlap included."""
     for chunk in chunks:
         film_start = chunk.first_frame_s
         samples = audio_window(
-            path, picture_start_s + film_start, audio_start_s, chunk.end_s - film_start, channels
-        )
-        yield dataclasses.replace(chunk, audio=Audio(AUDIO_RATE, film_start, samples))
+            path, clock.picture_start_s + film_start, clock.audio_start_s,
+            chunk.end_s - film_start, pcm,
+        )  # fmt: skip
+        window = Audio(pcm.rate, film_start, samples)
+        if hires:
+            yield dataclasses.replace(chunk, audio_hires=window)
+        else:
+            yield dataclasses.replace(chunk, audio=window)
+
+
+def attach_audio(
+    chunks: Iterable[Chunk], path: Path, pcm: PcmFormat, clock: Clock
+) -> Iterator[Chunk]:
+    """Chunks with their speech-rate audio (`audio`, AUDIO_RATE)."""
+    return _attach(chunks, path, pcm, clock, hires=False)
+
+
+def attach_hires(
+    chunks: Iterable[Chunk], path: Path, pcm: PcmFormat, clock: Clock
+) -> Iterator[Chunk]:
+    """Chunks with their loudness-rate audio (`audio_hires`, AUDIO_HIRES_RATE)."""
+    return _attach(chunks, path, pcm, clock, hires=True)

@@ -21,10 +21,10 @@ from typing import IO, cast
 import numpy as np
 
 from filmanalyser.core.chunk import Chunk, Frames, span_for
-from filmanalyser.core.config import STDERR_LIMIT_BYTES, Config
+from filmanalyser.core.config import AUDIO_HIRES_RATE, AUDIO_RATE, STDERR_LIMIT_BYTES, Config
 from filmanalyser.core.errors import DecodeError
 from filmanalyser.core.events import log_event
-from filmanalyser.media.audio import attach_audio
+from filmanalyser.media.audio import Clock, PcmFormat, attach_audio, attach_hires
 from filmanalyser.media.chunker import chunk_frames
 from filmanalyser.media.paths import find_tool, scrub_stderr, validate_input_path
 from filmanalyser.media.probe import probe_video
@@ -172,5 +172,7 @@ def decode_chunks(
     frames = stream_frames(path, config, size, seek)
     chunks = chunk_frames(frames, config, (size[1], size[0]), start_chunk)
     if channels is not None:
-        chunks = attach_audio(chunks, path, channels, info.start_s, audio_start_s)
+        clock = Clock(info.start_s, audio_start_s)
+        chunks = attach_audio(chunks, path, PcmFormat(channels, AUDIO_RATE), clock)
+        chunks = attach_hires(chunks, path, PcmFormat(channels, AUDIO_HIRES_RATE), clock)
     yield from _timed(chunks, path.name)

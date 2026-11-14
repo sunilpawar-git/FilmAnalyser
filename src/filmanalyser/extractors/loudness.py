@@ -30,7 +30,7 @@ from filmanalyser.extractors._kweighting import k_weight
 from filmanalyser.extractors._truepeak import true_peak_linear
 
 NAME = "loudness"
-VERSION = 2
+VERSION = 3  # v3: measured at 48 kHz (DECISIONS #72)
 FEATURES = ("integrated_lufs", "peak_dbfs", "true_peak_dbfs")
 SURROUND_WEIGHT = 1.41  # BS.1770-4: the surround channels of a 5.1 mix
 _TINY = 1e-30  # keeps log10 finite for a silent block (it then fails the absolute gate)
@@ -111,15 +111,16 @@ class Loudness:
     needs_audio: bool = True
 
     def extract(self, chunk: Chunk) -> Mapping[str, float]:
-        audio = chunk.audio
-        if audio is None:
+        """Measured on the loudness-rate window (48 kHz, BS.1770's own rate; DECISIONS #72)."""
+        window = chunk.audio_hires
+        if window is None:
             raise InputError(key="error.input.bad_setting", name="audio")
-        weighted = k_weight(audio.samples, audio.rate)
-        offset = chunk.audio_core_offset
+        offset = chunk.core_offset_in(window)
+        weighted = k_weight(window.samples, window.rate)
         return {
-            "integrated_lufs": integrated_lufs(weighted, offset, audio.rate),
-            "peak_dbfs": peak_dbfs(chunk.core_audio),
-            "true_peak_dbfs": true_peak_dbfs(audio.samples, offset, audio.rate),
+            "integrated_lufs": integrated_lufs(weighted, offset, window.rate),
+            "peak_dbfs": peak_dbfs(window.samples[offset:]),
+            "true_peak_dbfs": true_peak_dbfs(window.samples, offset, window.rate),
         }
 
 

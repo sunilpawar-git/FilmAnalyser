@@ -20,6 +20,7 @@ import numpy.typing as npt
 
 from filmanalyser.core.chunk import Chunk
 from filmanalyser.core.config import (
+    AUDIO_HIRES_RATE,
     AUDIO_RATE,
     LOUDNESS_BLOCK_S,
     LOUDNESS_HOP_S,
@@ -31,7 +32,7 @@ from filmanalyser.extractors._truepeak import true_peak_linear
 from filmanalyser.extractors.loudness import block_energies, channel_weights, gated_lufs
 from filmanalyser.extractors.shot_cuts import cut_positions
 from filmanalyser.extractors.speech_music import MUSIC, SILENCE, SPEECH, classify_windows
-from filmanalyser.media.audio import audio_stream, audio_window
+from filmanalyser.media.audio import PcmFormat, audio_stream, audio_window
 from filmanalyser.media.paths import validate_input_path
 from filmanalyser.media.probe import probe_video
 from filmanalyser.pipeline.runner import chunk_stream
@@ -191,15 +192,15 @@ def cut_predictions(path: Path) -> npt.NDArray[np.float64]:
 
 
 def film_loudness(path: Path) -> tuple[float | None, float | None]:
-    """Whole-film integrated loudness (LUFS) and true peak (dBFS) at the analysis rate.
-
-    Blocks sit on one global grid and are gated together, as BS.1770 requires; the film is read
-    in segments, so memory stays bounded."""
+    """Whole-film integrated loudness (LUFS) and true peak (dBFS), measured at 48 kHz as BS.1770
+    specifies (DECISIONS #72). Blocks sit on one global grid and are gated together; the film is
+    read in segments, so memory stays bounded."""
     stream = audio_stream(path)
     if stream is None:
         return None, None
     info = probe_video(path)
-    rate = AUDIO_RATE
+    rate = AUDIO_HIRES_RATE
+    pcm = PcmFormat(stream.channels, rate)
     block = round(LOUDNESS_BLOCK_S * rate)
     hop = round(LOUDNESS_HOP_S * rate)
     weights = channel_weights(stream.channels)
@@ -209,9 +210,7 @@ def film_loudness(path: Path) -> tuple[float | None, float | None]:
     while position < info.duration_s:
         span = min(SEGMENT_S, info.duration_s - position)
         keep = -(-round(span * rate) // hop)  # block starts that fall inside this segment
-        raw = audio_window(
-            path, info.start_s + position, stream.start_s, span + block / rate, stream.channels
-        )
+        raw = audio_window(path, info.start_s + position, stream.start_s, span + block / rate, pcm)
         weighted = k_weight(raw, rate)
         energies.append(block_energies(weighted, block, hop, weights)[:keep])
         peak = max(peak, true_peak_linear(raw[: round(span * rate)].astype(np.float64), 0))
@@ -243,10 +242,7 @@ def report(labels: Labels, film: Path, tolerance: float) -> list[str]:
     lufs, true_peak = film_loudness(film)
     lines.append(_loudness_line("integrated", lufs, labels.ebur_integrated, "LUFS"))
     lines.append(_loudness_line("true peak", true_peak, labels.ebur_true_peak, "dBFS"))
-    lines.append(
-        "note: audio is analysed at 16 kHz; true peak reads low where content is above 8 kHz "
-        "(about 0.4 dB on the first clip; see DECISIONS #68)"
-    )
+    lines.append("note: loudness and true peak are measured at 48 kHz (BS.1770); speech at 16 kHz")
     return lines
 
 
