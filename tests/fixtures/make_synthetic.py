@@ -100,10 +100,11 @@ def make_cut_clip(
     return out
 
 
-def _av_source(seconds: float, size: tuple[int, int], fps: int) -> list[str]:
+def _av_source(seconds: float, size: tuple[int, int], fps: int, *, flat: bool = False) -> list[str]:
     width, height = size
     ramp = f"geq=lum='255*mod(T,{RAMP_PERIOD_S})/{RAMP_PERIOD_S}':cb=128:cr=128"
-    source = f"color=c=black:s={width}x{height}:r={fps}:d={seconds},{ramp}"
+    colour = f"color=c={'gray' if flat else 'black'}:s={width}x{height}:r={fps}:d={seconds}"
+    source = colour if flat else f"{colour},{ramp}"
     return ["-f", "lavfi", "-i", source]
 
 
@@ -117,16 +118,18 @@ def av_clip_argv(
     fps: int = FPS,
     audio_offset: float = 0.0,
     layout: str | None = None,
+    flat: bool = False,
 ) -> list[str]:
-    """A clip with the ramp picture and an audio track built from `audio_expr` (an ffmpeg aevalsrc
-    expression; commas inside it must be escaped as `\\,` because it is a filter graph). Stereo
-    takes one expression per channel, separated by `|`."""
+    """A clip with the ramp picture (with `flat`, a still grey one that never changes) and an audio
+    track built from `audio_expr` (an ffmpeg aevalsrc expression; commas inside it must be escaped
+    as `\\,` because it is a filter graph). Stereo takes one expression per channel, separated by
+    `|`."""
     layout = layout or ("stereo" if stereo else "mono")
     audio = f"aevalsrc=exprs={audio_expr}:s=16000:d={seconds}:c={layout}"
     # -itsoffset delays the audio clock: its first sample sits at `audio_offset` seconds
     delay = ["-itsoffset", str(audio_offset)] if audio_offset else []
     return [
-        "ffmpeg", "-v", "error", "-y", *_av_source(seconds, size, fps),
+        "ffmpeg", "-v", "error", "-y", *_av_source(seconds, size, fps, flat=flat),
         *delay, "-f", "lavfi", "-i", audio,
         *VIDEO_ENCODE, "-g", str(fps * 2), "-c:a", "pcm_s16le", "-shortest",
         # QuickTime, not MP4: MP4 cannot hold PCM on the ffmpeg 6.0 that CI pins (its muxer
@@ -136,11 +139,18 @@ def av_clip_argv(
 
 
 def make_av_clip(
-    out: Path, seconds: float, audio_expr: str, *, stereo: bool = False, audio_offset: float = 0.0
+    out: Path,
+    seconds: float,
+    audio_expr: str,
+    *,
+    stereo: bool = False,
+    audio_offset: float = 0.0,
+    flat: bool = False,
 ) -> Path:
-    subprocess.run(
-        av_clip_argv(out, seconds, audio_expr, stereo=stereo, audio_offset=audio_offset), check=True
+    argv = av_clip_argv(
+        out, seconds, audio_expr, stereo=stereo, audio_offset=audio_offset, flat=flat
     )
+    subprocess.run(argv, check=True)
     return out
 
 
