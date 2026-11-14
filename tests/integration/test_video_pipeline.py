@@ -13,6 +13,7 @@ from filmanalyser.extractors.registry import discover
 from filmanalyser.extractors.shot_cuts import cut_positions
 from filmanalyser.media.ffmpeg_stream import decode_chunks
 from filmanalyser.pipeline.runner import analyse
+from filmanalyser.report.display import clock_text
 from filmanalyser.report.renderer import render_report
 from filmanalyser.report.resources.colors import ColorTokens
 from filmanalyser.report.resources.strings import Strings
@@ -84,8 +85,8 @@ def test_the_report_shows_the_stored_cut_count(tmp_path: Path) -> None:
     store = analyse(film, tmp_path / "out", CONFIG)
     view = build_view(store.read_columns(), film=film.name)
     page = render_report(view, Strings.load(), ColorTokens.load())
-    assert view.total_cuts == 3
-    assert np.isclose(view.film_seconds, sum(s for _c, s in SCENES), atol=0.2)
+    assert view.overview.total_cuts == 3
+    assert view.length_text == clock_text(sum(s for _c, s in SCENES))
     assert "<polyline" in page
 
 
