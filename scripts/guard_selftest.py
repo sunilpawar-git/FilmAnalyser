@@ -9,6 +9,7 @@ from pathlib import Path
 from guard_probes import Probe, other_probes, source_probes
 from guard_probes_phase4 import phase4_mutation_probes, phase4_probes
 from guard_probes_phase6 import phase6_mutation_probes, phase6_probes
+from guard_probes_phase7 import phase7_mutation_probes, phase7_probes
 
 REPO = Path(__file__).resolve().parents[1]
 TIMEOUT_SECONDS = 300
@@ -62,6 +63,8 @@ def main() -> int:
         *phase4_mutation_probes(),
         *phase6_probes(),
         *phase6_mutation_probes(),
+        *phase7_probes(),
+        *phase7_mutation_probes(),
         *other_probes(),
     ]:
         problem = run_probe(probe)
