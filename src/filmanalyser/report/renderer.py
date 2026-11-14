@@ -1,8 +1,8 @@
 """View: renders a ReportView into one static HTML page (DECISIONS #52, #56).
 
-Jinja2 with autoescape on, so every value is escaped by default. The template receives the text
-lookup `t` (strings.toml), the colour tokens as CSS (colors.toml) and the view. It contains no
-logic beyond loops and lookups.
+Jinja2 with autoescape on, so every value is escaped by default. The templates receive the text
+lookup `t` (strings.toml), the colour tokens as CSS (colors.toml) and the view. They contain no
+logic beyond loops and lookups; the page is one file with no script and no external request.
 """
 
 import jinja2

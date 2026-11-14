@@ -65,13 +65,128 @@ default = "The analysis could not be completed."
 bad_timeline = "The stored results cannot be analysed: '$name' is missing or unusable."
 
 [report]
-title = "Shot cut report"
+title = "Film analysis report"
 film = "Film"
-film_minutes = "Film length (minutes)"
+length = "Film length"
+chunks = "Chunks analysed"
+empty = "No chunks were analysed, so there is nothing to report."
+
+[notice]
+heading = "Read this first"
+unvalidated = "These are observations, not findings. The act breaks, the tension peak, the pacing plateaus and the flags below are unvalidated (open items P6-1 and P6-2): their rules and thresholds were calibrated on synthetic data only, and no film with known act structure or a known climax has been checked against them."
+
+[section]
+overview = "Overview"
+charts = "Curves"
+acts = "Act breaks"
+tension = "Tension"
+pacing = "Pacing"
+flags = "Flagged moments"
+
+[overview]
 total_cuts = "Hard cuts found"
 average_shot = "Average shot length (seconds)"
+mean_rate = "Mean cut rate (cuts and gradual transitions per minute)"
+
+[act]
+note = "A break is where the film's measured state changes most, inside the two zones where an act break classically falls. None is forced: a zone with no strong enough change has no break."
+features = "Features compared:"
+col_time = "Time"
+col_share = "Share of the film (%)"
+col_score = "Change score"
+col_moved = "Moved most"
+none = "No act break was found."
+spans = "The film in acts"
+span = "Act $number: $start to $end"
+
+[act.audio]
+used = "Sound was used: the loudness, speech, tonal and silence measurements are part of the comparison."
+not_used = "Sound was not used: this film has no audio measurements, so the breaks come from the picture alone."
+
+[act.zone]
+found = "Zone $zone: a break at $time."
+empty = "Zone $zone: no break found."
+too_short = "Zone $zone: too short to judge (needs $needs)."
+
+[tension]
+note = "Tension is the mean of how fast the film is cut and how loud it is, each measured against the film's own average. It is a relative measure, not a rating."
+components = "Made of:"
+peak = "Peak at $time, $height standard deviations above the film's average."
+no_peak = "No tension peak reached the minimum height."
+minimum = "A peak is reported only from $height standard deviations above the average."
+
+[pacing]
+mean = "Mean cut rate: $rate cuts and gradual transitions per minute."
+plateaus = "Plateaus: stretches that keep one cutting speed while the film around them varies."
+none = "No plateau was found."
+col_span = "Stretch"
+col_rate = "Cuts per minute"
+span = "$start to $end"
+
+[flags]
+note = "Each flag says which rule raised it. Consecutive chunks that raise the same rule are one flag."
+none = "No moment was flagged."
+col_time = "Time"
+col_kind = "Flag"
+col_value = "Measured"
+span = "$start to $end"
+
+[flag.kind]
+fast_cutting = "Fast cutting: cut rate far above the film's usual"
+loud = "Loud: loudness far above the film's usual"
+quiet = "Quiet: nearly every window of the chunk is silence"
+clipping = "Clipping: true peak at or above full scale"
+long_take = "Long take: several chunks in a row without a cut"
+
+[flag.value]
+fast_cutting = "$value standard deviations above the usual"
+loud = "$value standard deviations above the usual"
+quiet = "$value of the chunk is silence"
+clipping = "true peak $value dBFS"
+long_take = "$value chunks without a cut"
+
+[feature]
+cut_rate = "Cuts per minute"
+tension = "Tension (standard deviations)"
+
+[feature.loudness]
+integrated_lufs = "Loudness (LUFS)"
+
+[feature.speech_music]
+speech_ratio = "Speech"
+tonal_ratio = "Non-speech and tonal"
+silence_ratio = "Silence"
+
+[feature.color]
+brightness = "Brightness"
+contrast = "Contrast"
+colourfulness = "Colourfulness"
+warmth = "Warmth"
+
+[chart.axis]
+time = "Film time (minutes)"
+
+[chart.mark]
+break = "Act break"
+peak = "Tension peak"
+plateau = "Pacing plateau"
 
 [chart.cut_rate]
-label = "Hard cuts per minute over the film"
-caption = "Hard cuts per minute, one point per chunk, against film time."
+label = "Cuts per minute over the film"
+caption = "Cuts and gradual transitions per minute, one point per chunk. Shaded: pacing plateaus."
 
+[chart.tension]
+label = "Tension over the film"
+caption = "Tension, in standard deviations from the film's own average."
+
+[chart.loudness]
+label = "Loudness over the film"
+caption = "Integrated loudness per chunk. A gap is a chunk with no measurable sound."
+
+[chart.mix]
+label = "Speech, non-speech and tonal sound, and silence over the film"
+caption = "The share of each chunk's windows that are speech, non-speech and tonal, or silence."
+
+[chart.picture]
+label = "Brightness, contrast, colourfulness and warmth over the film"
+caption = "Picture measurements per chunk. Brightness, contrast and colourfulness run from 0 to 1; warmth is red minus blue."

@@ -1,0 +1,20 @@
+<h2>{{ t('section.acts') }}</h2>
+<p class="note">{{ t('act.note') }}</p>
+<p>{{ t(view.acts.audio_key) }}</p>
+<ul>
+  {% for z in view.acts.zones %}<li>{{ t(z.key, zone=z.number, time=z.time_text, needs=z.needs_text) }}</li>{% endfor %}
+</ul>
+{% if view.acts.breaks %}
+<table>
+  <tr><th>{{ t('act.col_time') }}</th><th>{{ t('act.col_share') }}</th><th>{{ t('act.col_score') }}</th><th>{{ t('act.col_moved') }}</th></tr>
+  {% for b in view.acts.breaks %}<tr><td>{{ b.time_text }}</td><td>{{ b.percent_text }}</td><td>{{ b.score_text }}</td><td><span class="items">{% for key in b.moved_keys %}<span>{{ t(key) }}</span>{% endfor %}</span></td></tr>
+  {% endfor %}
+</table>
+<p>{{ t('act.spans') }}</p>
+<ul>
+  {% for s in view.acts.spans %}<li>{{ t('act.span', number=s.number, start=s.start_text, end=s.end_text) }}</li>{% endfor %}
+</ul>
+{% else %}
+<p>{{ t('act.none') }}</p>
+{% endif %}
+<p class="note">{{ t('act.features') }} <span class="items">{% for key in view.acts.feature_keys %}<span>{{ t(key) }}</span>{% endfor %}</span></p>

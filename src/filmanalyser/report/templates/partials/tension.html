@@ -1,0 +1,9 @@
+<h2>{{ t('section.tension') }}</h2>
+<p class="note">{{ t('tension.note') }}</p>
+<p class="note">{{ t('tension.components') }} <span class="items">{% for key in view.tension.component_keys %}<span>{{ t(key) }}</span>{% endfor %}</span></p>
+{% if view.tension.peak %}
+<p>{{ t('tension.peak', time=view.tension.peak.time_text, height=view.tension.peak.height_text) }}</p>
+{% else %}
+<p>{{ t('tension.no_peak') }}</p>
+{% endif %}
+<p class="note">{{ t('tension.minimum', height=view.tension.min_height_text) }}</p>
