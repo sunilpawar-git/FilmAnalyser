@@ -122,12 +122,21 @@ results has been checked against anything a person has judged.
   not have.
 - **No colour palette.** The report charts brightness, contrast, colourfulness and warmth. It does not
   show dominant colours, because no feature stores them (DECISIONS #97, open item P7-1).
-- **Seen on synthetic films only.** The page was rendered and viewed (light and dark) for a constructed
-  100-chunk film and checked by tests on pipeline-made clips. It has not been opened on the report of a
-  real feature film (open item P7-2); a three-hour film makes 180 chart points per line, which the
-  geometry handles, but nobody has looked at it.
+- **Seen on one real film.** The Odyssey's report (2:52:35, 173 chunks) was opened at full length in
+  light and dark and reads correctly (DECISIONS #103). The reports of the other local films were not
+  opened, and none of the owner's validation films has been (open item P8-1). One burst (79 cuts per
+  minute at 1:51) sets the cut-rate chart's scale, so ordinary variation looks small beside it.
 - **Charts are static.** No zoom or hover: a value is read from the axes or the tables below. Marker
   times are printed on the chart; the tables carry every timestamp.
+
+## Performance
+
+- **Measured on one machine** (Apple M4, 16 GB, ffmpeg 9.0.2, one run each, default settings). Peak
+  memory 1014 to 1505 MB and run time 3:48 to 12:10 for six films of 1:34 to 2:53 (DECISIONS #103,
+  `docs/handoff/phase-8.md`); the budgets are 2 GB and 45 minutes. 5.1 films use the most memory (the
+  loudness windows have six channels); before DECISIONS #99 The Odyssey needed 2231 MB. Other
+  machines, other ffmpeg versions and films longer than 3 hours are not measured. `--separate-voices`
+  is not included in these figures and is far slower.
 
 ## Alignment and sync
 
