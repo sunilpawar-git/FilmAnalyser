@@ -19,6 +19,7 @@ from filmanalyser.analysis.tension import analyse_tension
 from filmanalyser.analysis.timeline import Columns, build_timeline
 from filmanalyser.core.config import STORE_MAX_FILE_BYTES
 from filmanalyser.core.errors import StorageError
+from filmanalyser.report.display import clock_text
 from filmanalyser.storage.files import read_bounded, sha256_bytes
 from filmanalyser.storage.manifest import load_manifest
 from filmanalyser.storage.schema import chunk_file_name
@@ -41,15 +42,10 @@ def read_store(root: Path) -> Columns:
     return {name: whole.column(name).to_numpy() for name in whole.column_names}
 
 
-def clock(seconds: float) -> str:
-    whole = int(seconds)
-    return f"{whole // 3600}:{whole % 3600 // 60:02d}:{whole % 60:02d}"
-
-
 def empty_zone_lines(acts: ActBreaks) -> list[str]:
     """A zone judged with nothing found reads differently from one the film is too short for."""
     return [
-        f"zone {zone}: film too short to judge (needs {clock(acts.min_film_s or 0.0)})"
+        f"zone {zone}: film too short to judge (needs {clock_text(acts.min_film_s or 0.0)})"
         if zone in acts.unscored_zones
         else f"no break in zone {zone}"
         for zone in acts.empty_zones
@@ -64,11 +60,12 @@ def describe(columns: Columns) -> list[str]:
         analyse_pacing(timeline),
     )
     lines = [
-        f"film {clock(timeline.film_end_s)}, {timeline.count} chunks, audio: {acts.audio_used}",
+        f"film {clock_text(timeline.film_end_s)}, {timeline.count} chunks, "
+        f"audio: {acts.audio_used}",
         f"boundaries scored: {acts.scored}; features: {', '.join(acts.features_used)}",
     ]
     lines += [
-        f"act break at {clock(b.time_s)} (boundary {b.boundary}, "
+        f"act break at {clock_text(b.time_s)} (boundary {b.boundary}, "
         f"{100 * b.time_s / timeline.film_end_s:.0f}% of the film), score {b.score:.2f}, "
         f"moved most: {', '.join(b.moved)}"
         for b in acts.breaks
@@ -76,7 +73,7 @@ def describe(columns: Columns) -> list[str]:
     lines += empty_zone_lines(acts)
     peak = tension.peak
     lines.append(
-        f"tension peak at {clock(peak.start_s)} (z {peak.value:.2f}; "
+        f"tension peak at {clock_text(peak.start_s)} (z {peak.value:.2f}; "
         f"{', '.join(tension.components)})"
         if peak
         else "no tension peak above the minimum height"
@@ -85,7 +82,8 @@ def describe(columns: Columns) -> list[str]:
         f"mean cut rate {pacing.mean_rate:.2f} per minute; {len(pacing.plateaus)} plateaus"
     )
     lines += [
-        f"plateau {clock(p.start_s)} to {clock(p.end_s)} at {p.mean_rate:.2f} cuts per minute"
+        f"plateau {clock_text(p.start_s)} to {clock_text(p.end_s)} "
+        f"at {p.mean_rate:.2f} cuts per minute"
         for p in pacing.plateaus
     ]
     flags = find_flags(timeline)
