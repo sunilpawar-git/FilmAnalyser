@@ -1,0 +1,105 @@
+{
+ "cut": {
+  "chunk_index": [
+   0.0,
+   1.0
+  ],
+  "start_s": [
+   0.0,
+   2.0
+  ],
+  "end_s": [
+   2.0,
+   4.0
+  ],
+  "color.brightness": [
+   0.21,
+   0.072
+  ],
+  "color.contrast": [
+   0.0,
+   0.0
+  ],
+  "color.colourfulness": [
+   0.988,
+   0.992
+  ],
+  "color.warmth": [
+   0.988,
+   -0.992
+  ],
+  "color.letterbox": [
+   0.0,
+   0.0
+  ],
+  "shot_cuts.cuts": [
+   0.0,
+   1.0
+  ],
+  "shot_cuts.gradual": [
+   0.0,
+   0.0
+  ],
+  "shot_cuts.max_diff": [
+   0.0,
+   1.0
+  ]
+ },
+ "tone": {
+  "chunk_index": [
+   0.0,
+   1.0,
+   2.0
+  ],
+  "start_s": [
+   0.0,
+   2.0,
+   4.0
+  ],
+  "end_s": [
+   2.0,
+   4.0,
+   6.0
+  ],
+  "loudness.integrated_lufs": [
+   -70.0,
+   -9.714,
+   -46.919
+  ],
+  "loudness.peak_dbfs": [
+   -41.974,
+   -6.02,
+   -41.974
+  ],
+  "loudness.true_peak_dbfs": [
+   -56.304,
+   -6.02,
+   -41.652
+  ],
+  "shot_cuts.cuts": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "speech_music.silence_ratio": [
+   1.0,
+   0.0,
+   1.0
+  ],
+  "speech_music.speech_ratio": [
+   0.0,
+   0.0,
+   0.0
+  ],
+  "speech_music.tonal_ratio": [
+   0.0,
+   1.0,
+   0.0
+  ],
+  "speech_music.other_ratio": [
+   0.0,
+   0.0,
+   0.0
+  ]
+ }
+}

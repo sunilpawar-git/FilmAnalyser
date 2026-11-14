@@ -1,0 +1,44 @@
+{
+ "version": "20f53e19117520166faa09d65cc8019344191059a8f8a053fb6aaca86ea608a0",
+ "extractors": [
+  [
+   "color",
+   1,
+   [
+    "brightness",
+    "contrast",
+    "colourfulness",
+    "warmth",
+    "letterbox"
+   ]
+  ],
+  [
+   "loudness",
+   3,
+   [
+    "integrated_lufs",
+    "peak_dbfs",
+    "true_peak_dbfs"
+   ]
+  ],
+  [
+   "shot_cuts",
+   4,
+   [
+    "cuts",
+    "gradual",
+    "max_diff"
+   ]
+  ],
+  [
+   "speech_music",
+   3,
+   [
+    "silence_ratio",
+    "speech_ratio",
+    "tonal_ratio",
+    "other_ratio"
+   ]
+  ]
+ ]
+}
