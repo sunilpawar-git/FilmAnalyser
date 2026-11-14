@@ -33,21 +33,26 @@ mp4 --ffmpeg pipe--> 60s chunk --> extractors --> append to Parquet --> discard 
   ones; results from different inputs, extractor versions or settings are rejected, never mixed.
 
 ## Stack
-Python 3.11+, ffmpeg, NumPy, Parquet (`pyarrow`), Jinja2 (report). OpenCV, librosa, ONNX Runtime and `ruptures` arrive with their phases; shot cuts and letterboxing use NumPy alone (DECISIONS #51). FastAPI + web UI + Tauri packaging are post-MVP.
+Python 3.11+, ffmpeg, NumPy, Parquet (`pyarrow`), Jinja2 (report). ONNX Runtime (Silero voice model); shot cuts and letterboxing use NumPy alone (DECISIONS #51). FastAPI + web UI + Tauri packaging are post-MVP.
 
 ## MVP metrics
 Shot cuts and average shot length, cut-rate curve, colour palette and brightness, loudness profile, speech/music/silence ratio, tension curve, act-break detection, flagged timestamps.
 
 ## Usage
 ```sh
-filmanalyser film.mp4 --out work/film        # writes work/film/report.html
-filmanalyser film.mp4 --out work/film -v     # also prints the structured progress events
+filmanalyser film.mp4                    # results and report.html in ./film.analysis/
+filmanalyser film.mp4 --out work/film    # choose the folder
+filmanalyser film.mp4 -v                 # also print one progress event per chunk (stderr)
+filmanalyser film.mp4 --out work/film --fresh   # discard stored results, start over
 ```
 Repeating a run with the same `--out` folder resumes at the first unfinished chunk. Exit codes:
 `0` success, `1` internal error, `2` invalid input or setting, `3` the film could not be decoded
 (or ffmpeg is missing, or voice separation failed), `4` a model file is missing or failed its
-integrity check, `5` the stored features are damaged or belong to another film. The report
-is one static HTML page (no scripts, no network); it shows the hard cuts per minute over the film.
+integrity check, `5` the stored results are damaged or belong to another film, `6` the analysis
+could not complete, `130` stopped with Ctrl-C. The report is one static HTML page (no scripts, no
+network) with the cut rate, picture, loudness, speech and tension curves, act breaks, pacing
+plateaus and timestamped flags. Its first note says that those analysis results are observations,
+not validated findings. Full guide: `docs/USAGE.md`; measured limits: `docs/LIMITATIONS.md`.
 
 ### Optional: speech under loud music (stereo films)
 A 5.1 film's dialogue is read from its centre channel. A stereo or mono film has no dialogue
@@ -71,6 +76,9 @@ make hooks     # pre-commit + Conventional Commits check
 make check     # the build: lint, mypy --strict, tests + coverage, security, wheel, guard self-test
 make nightly   # slow checks (long-film memory): run by the nightly workflow
 make real-clip # real-footage kill-and-resume test: FILMANALYSER_REAL_CLIP=/path/to/clip make real-clip
+make sbom      # CycloneDX SBOM of the runtime dependencies (dist/)
+make changelog # regenerate CHANGELOG.md from Conventional Commits
+make release-assets  # wheel + SBOM + checksums, as the release workflow builds them
 make models   # fetch the pinned Silero VAD model (setup only; the app never downloads)
 make separation-model  # opt-in: the pinned voice-separation model (needs demucs to use)
 make separation-check  # opt-in: real separation test (demucs on PATH + the model)
@@ -85,6 +93,9 @@ The real-footage test never runs inside `make check` (DECISIONS #53); the clip s
 
 ## Docs
 - `EXECUTION_PLAN.md`: phases, rules, enforcement
+- `docs/USAGE.md`: how to run it, options, exit codes, resuming, validating
+- `docs/RELEASING.md`: how a release is cut
+- `docs/LIMITATIONS.md`: what the output can and cannot be trusted for
 - `docs/handoff/`: per-phase handoff notes
 - `docs/BRANCH_PROTECTION.md`: GitHub setup for `main`
 - `ACCEPTANCE.md`: what "done" means
