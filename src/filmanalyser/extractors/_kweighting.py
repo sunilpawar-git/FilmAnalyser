@@ -17,6 +17,7 @@ import numpy as np
 import numpy.typing as npt
 
 from filmanalyser.core.chunk import Samples
+from filmanalyser.extractors._convolve import fft_convolve
 
 # BS.1770-4 analogue prototype parameters (frequency Hz, gain dB, Q).
 _SHELF_F0, _SHELF_GAIN_DB, _SHELF_Q = 1681.974450955533, 3.999843853973347, 0.7071752369554196
@@ -89,10 +90,11 @@ def _kernel(rate: int) -> npt.NDArray[np.float64]:
 
 
 def k_weight(samples: Samples, rate: int) -> npt.NDArray[np.float64]:
-    """K-weight each channel of `samples` (count, channels). Output has the same shape."""
+    """K-weight each channel of `samples` (count, channels). Output has the same shape. One channel
+    and one block at a time, so memory does not grow with the window (DECISIONS #99)."""
     kernel = _kernel(rate)
     count = len(samples)
-    size = 1 << (count + len(kernel) - 1).bit_length()
-    spectrum = np.fft.rfft(kernel, size)[:, None]
-    signal = np.fft.rfft(samples.astype(np.float64), size, axis=0)
-    return np.asarray(np.fft.irfft(signal * spectrum, size, axis=0)[:count], dtype=np.float64)
+    weighted = np.empty(samples.shape, dtype=np.float64)
+    for channel in range(samples.shape[1]):
+        weighted[:, channel] = fft_convolve(samples[:, channel], kernel)[:count]
+    return weighted
