@@ -1,0 +1,12 @@
+<h2>{{ t('section.pacing') }}</h2>
+<p>{{ t('pacing.mean', rate=view.pacing.mean_rate_text) }}</p>
+<p class="note">{{ t('pacing.plateaus') }}</p>
+{% if view.pacing.plateaus %}
+<table>
+  <tr><th>{{ t('pacing.col_span') }}</th><th>{{ t('pacing.col_rate') }}</th></tr>
+  {% for p in view.pacing.plateaus %}<tr><td>{{ t('pacing.span', start=p.start_text, end=p.end_text) }}</td><td>{{ p.rate_text }}</td></tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>{{ t('pacing.none') }}</p>
+{% endif %}

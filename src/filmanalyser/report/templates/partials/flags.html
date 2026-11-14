@@ -1,0 +1,11 @@
+<h2>{{ t('section.flags') }}</h2>
+<p class="note">{{ t('flags.note') }}</p>
+{% if view.flags %}
+<table>
+  <tr><th>{{ t('flags.col_time') }}</th><th>{{ t('flags.col_kind') }}</th><th>{{ t('flags.col_value') }}</th></tr>
+  {% for row in view.flags %}<tr><td>{{ t('flags.span', start=row.start_text, end=row.end_text) }}</td><td>{{ t(row.kind_key) }}</td><td>{{ t(row.value_key, value=row.value_text) }}</td></tr>
+  {% endfor %}
+</table>
+{% else %}
+<p>{{ t('flags.none') }}</p>
+{% endif %}

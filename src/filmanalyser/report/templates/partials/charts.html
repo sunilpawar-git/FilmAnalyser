@@ -1,0 +1,21 @@
+<h2>{{ t('section.charts') }}</h2>
+{% for c in view.charts %}
+<figure>
+  <svg viewBox="0 0 {{ c.width }} {{ c.height }}" role="img" aria-label="{{ t(c.key ~ '.label') }}">
+    {% for b in c.bands %}<rect class="band" x="{{ b.x }}" y="{{ c.top }}" width="{{ b.width }}" height="{{ c.bottom - c.top }}"></rect>{% endfor %}
+    {% for k in c.y_ticks %}<line class="grid" x1="{{ c.left }}" y1="{{ k.pos }}" x2="{{ c.right }}" y2="{{ k.pos }}"></line>
+    <text class="tick" x="{{ c.left - 6 }}" y="{{ k.pos + 4 }}" text-anchor="end">{{ k.text }}</text>{% endfor %}
+    <line class="axis" x1="{{ c.left }}" y1="{{ c.bottom }}" x2="{{ c.right }}" y2="{{ c.bottom }}"></line>
+    {% for k in c.x_ticks %}<text class="tick" x="{{ k.pos }}" y="{{ c.bottom + 16 }}" text-anchor="middle">{{ k.text }}</text>{% endfor %}
+    <text class="tick" x="{{ (c.left + c.right) / 2 }}" y="{{ c.height - 4 }}" text-anchor="middle">{{ t('chart.axis.time') }}</text>
+    {% for line in c.lines %}{% for segment in line.segments %}<polyline class="series {{ line.style }}" points="{{ segment }}"></polyline>{% endfor %}{% endfor %}
+    {% for m in c.markers %}<line class="mark {{ m.kind }}" x1="{{ m.x }}" y1="{{ c.top }}" x2="{{ m.x }}" y2="{{ c.bottom }}"></line>
+    <text class="mark-text {{ m.kind }}" x="{{ m.x + 4 }}" y="{{ c.top + 10 }}">{{ m.text }}</text>{% endfor %}
+  </svg>
+  <figcaption>{{ t(c.key ~ '.caption') }}</figcaption>
+  <ul class="legend">
+    {% for line in c.lines %}<li><span class="swatch {{ line.style }}"></span>{{ t(line.label_key) }}</li>{% endfor %}
+    {% for e in c.legend %}<li><span class="swatch {{ e.kind }}"></span>{{ t(e.label_key) }}</li>{% endfor %}
+  </ul>
+</figure>
+{% endfor %}
