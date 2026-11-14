@@ -25,6 +25,13 @@ def _content(probe: Probe, original: str | None) -> str | None:
     return original.replace(old, new) if original.count(old) == 1 else None
 
 
+def _drop_bytecode(source: Path) -> None:
+    """A mutation and its restore can share a modification second and a file size ("= 3" to
+    "= 4"), so Python would keep running the mutated bytecode: remove it."""
+    for stale in (source.parent / "__pycache__").glob(f"{source.stem}.*.pyc"):
+        stale.unlink(missing_ok=True)
+
+
 def run_probe(probe: Probe) -> str | None:
     """None when the guard caught the violation; otherwise a description of what went wrong."""
     target = REPO / probe.path
@@ -48,6 +55,7 @@ def run_probe(probe: Probe) -> str | None:
             target.unlink(missing_ok=True)
         else:
             target.write_text(original, encoding="utf-8")  # always restore the real source
+            _drop_bytecode(target)
     output = done.stdout + done.stderr
     if done.returncode == 0:
         return "check PASSED with the violation present (guard is silent)"
