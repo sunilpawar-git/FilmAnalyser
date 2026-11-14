@@ -114,6 +114,21 @@ results has been checked against anything a person has judged.
   Odyssey, peaks of +0.06 to +1.06 dBTP); `quiet` is a share of windows below -50 dBFS; `long_take` is three
   chunks in a row without a cut or transition (so credits and static title cards are flagged).
 
+## The report
+
+- **Everything in the analysis sections is an observation and the page says so.** Act breaks, the
+  tension peak, plateaus and flags carry a note at the top (unvalidated, open items P6-1 and P6-2,
+  calibrated on synthetic data only; DECISIONS #96). The report cannot add validity the analysis does
+  not have.
+- **No colour palette.** The report charts brightness, contrast, colourfulness and warmth. It does not
+  show dominant colours, because no feature stores them (DECISIONS #97, open item P7-1).
+- **Seen on synthetic films only.** The page was rendered and viewed (light and dark) for a constructed
+  100-chunk film and checked by tests on pipeline-made clips. It has not been opened on the report of a
+  real feature film (open item P7-2); a three-hour film makes 180 chart points per line, which the
+  geometry handles, but nobody has looked at it.
+- **Charts are static.** No zoom or hover: a value is read from the axes or the tables below. Marker
+  times are printed on the chart; the tables carry every timestamp.
+
 ## Alignment and sync
 
 - **Sound and picture are aligned on the container clock** (DECISIONS #67), with a silent lead when
