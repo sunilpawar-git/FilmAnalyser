@@ -8,6 +8,7 @@ from pathlib import Path
 
 from guard_probes import Probe, other_probes, source_probes
 from guard_probes_phase4 import phase4_mutation_probes, phase4_probes
+from guard_probes_phase6 import phase6_mutation_probes, phase6_probes
 
 REPO = Path(__file__).resolve().parents[1]
 TIMEOUT_SECONDS = 300
@@ -55,7 +56,14 @@ def run_probe(probe: Probe) -> str | None:
 
 def main() -> int:
     failures = 0
-    for probe in [*source_probes(), *phase4_probes(), *phase4_mutation_probes(), *other_probes()]:
+    for probe in [
+        *source_probes(),
+        *phase4_probes(),
+        *phase4_mutation_probes(),
+        *phase6_probes(),
+        *phase6_mutation_probes(),
+        *other_probes(),
+    ]:
         problem = run_probe(probe)
         status = "caught" if problem is None else f"NOT CAUGHT: {problem}"
         print(f"  {'ok  ' if problem is None else 'FAIL'} {probe.name}: {status}")
