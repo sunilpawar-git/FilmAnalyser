@@ -47,7 +47,9 @@
    "color.colourfulness",
    "color.warmth"
   ],
-  "scored": 91
+  "min_film_s": 780.0,
+  "scored": 91,
+  "unscored_zones": []
  },
  "flags": [
   {

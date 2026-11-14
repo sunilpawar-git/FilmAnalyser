@@ -64,6 +64,24 @@ class ActBreaks:
     features_used: tuple[str, ...]
     audio_used: bool  # False: the breaks come from the picture alone
     scored: int  # how many boundaries could be scored (none for a film under two windows)
+    # zones in which no boundary could be scored at all: the film is too short to judge them, which
+    # is not the same as judging them and finding nothing (DECISIONS #93)
+    unscored_zones: tuple[int, ...]
+    min_film_s: float | None  # the shortest film, at this chunk length, judged in every zone
+
+
+def _zone_holds(count: int, window: int, zone: tuple[float, float]) -> bool:
+    low, high = zone
+    return any(low <= t / count <= high for t in range(window, count - window + 1))
+
+
+def min_chunks(window: int) -> int:
+    """The fewest equal chunks for which every zone holds a boundary that can be scored, that is
+    one at least `window` chunks from each end of the film."""
+    count = 2 * window
+    while not all(_zone_holds(count, window, zone) for zone in ZONES):
+        count += 1
+    return count
 
 
 def _window_mean(matrix: Matrix, first: int, last: int) -> Matrix:
@@ -136,6 +154,21 @@ def _choose(
     return chosen, empty
 
 
+def _unscored(scores: Matrix, fractions: Matrix) -> tuple[int, ...]:
+    scorable = fractions[np.isfinite(scores)]
+    return tuple(
+        number
+        for number, (low, high) in enumerate(ZONES, 1)
+        if not np.any((scorable >= low) & (scorable <= high))
+    )
+
+
+def _min_film_s(timeline: Timeline, window: int) -> float | None:
+    if timeline.count == 0:
+        return None
+    return min_chunks(window) * float(np.max(timeline.end_s - timeline.start_s))  # a full chunk
+
+
 def _moved(matrix: Matrix, boundary: int, window: int, names: tuple[str, ...]) -> tuple[str, ...]:
     diff = _difference(matrix, boundary, window)
     size = np.where(np.isfinite(diff), np.abs(diff), -np.inf)  # a feature never measured loses
@@ -176,4 +209,6 @@ def find_act_breaks(timeline: Timeline, settings: ActSettings | None = None) -> 
         features_used=names,
         audio_used=timeline.audio_used,
         scored=scored,
+        unscored_zones=_unscored(scores, fractions),
+        min_film_s=_min_film_s(timeline, settings.window),
     )

@@ -1,4 +1,4 @@
-"""Phase 6 guards (DECISIONS #90 to #92): planted violations of the analysis layer's purity rules,
+"""Phase 6 guards (DECISIONS #90 to #93): planted violations of the analysis layer's purity rules,
 and mutations of the act-break rules that a named test must catch. Each planted violation must fail
 for its stated reason; each mutation must turn its named test red."""
 
@@ -55,5 +55,12 @@ def phase6_mutation_probes() -> list[Probe]:
             ("abs(t - other) >= gap", "abs(t - other) >= 0"),
             ACT_TESTS,
             "test_a_stronger_change_just_outside_a_zone_absorbs_a_close_candidate_inside_it",
+        ),
+        _mutation(
+            "a short film reported as judged (too short read as nothing found)",
+            f"{ANALYSIS}/act_breaks.py",
+            ("if not np.any((scorable >= low) & (scorable <= high))", "if scorable is None"),
+            ACT_TESTS,
+            "test_a_short_film_says_it_is_too_short_rather_than_that_nothing_changed",
         ),
     ]
