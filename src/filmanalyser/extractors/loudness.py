@@ -57,9 +57,11 @@ def block_energies(
     if count < block:
         return np.array([float(np.sum(weights * np.mean(core * core, axis=0)))])
     starts = np.arange(0, count - block + 1, hop)
-    csum = np.vstack([np.zeros((1, core.shape[1])), np.cumsum(core * core, axis=0)])
-    sums = csum[starts + block] - csum[starts]
-    return np.asarray(np.sum(sums * weights, axis=1) / block, dtype=np.float64)
+    energy = np.zeros(len(starts))
+    for channel in np.flatnonzero(weights):  # one channel at a time: no (count, channels) copy
+        csum = np.concatenate([[0.0], np.cumsum(core[:, channel] * core[:, channel])])
+        energy += weights[channel] * (csum[starts + block] - csum[starts])
+    return np.asarray(energy / block, dtype=np.float64)
 
 
 def _loudness(energy: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
@@ -98,7 +100,7 @@ def true_peak_dbfs(window: npt.NDArray[np.float32], core_offset: int, rate: int)
     is accepted for the signature of the other audio measures; the oversampling is by a fixed
     factor, so the result does not depend on it."""
     del rate
-    peak = true_peak_linear(np.asarray(window, dtype=np.float64), core_offset)
+    peak = true_peak_linear(window, core_offset)
     if peak <= 0.0:
         return PEAK_FLOOR_DBFS
     return max(PEAK_FLOOR_DBFS, 20 * float(np.log10(peak)))

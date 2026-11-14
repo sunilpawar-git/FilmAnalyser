@@ -8,8 +8,12 @@ side; zeros outside the window count as silence, so a window's edges add no fals
 This module's name starts with an underscore, so the registry never treats it as an extractor.
 """
 
+from typing import Any
+
 import numpy as np
 import numpy.typing as npt
+
+from filmanalyser.extractors._convolve import fft_convolve
 
 UPSAMPLE = 4
 HALF_TAPS = 8  # original samples either side of the interpolated point
@@ -25,19 +29,16 @@ def _kernel() -> npt.NDArray[np.float64]:
 _KERNEL = _kernel()
 
 
-def oversample(channel: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
+def oversample(channel: npt.NDArray[np.floating[Any]]) -> npt.NDArray[np.float64]:
     """`channel` (1-D) at UPSAMPLE times its rate: the original samples land on every UPSAMPLE-th
     point and the interpolator fills the rest."""
     stuffed = np.zeros(len(channel) * UPSAMPLE)
-    stuffed[::UPSAMPLE] = channel
-    size = 1 << (len(stuffed) + len(_KERNEL) - 1).bit_length()
-    spectrum = np.fft.rfft(_KERNEL, size) * np.fft.rfft(stuffed, size)
-    full = np.fft.irfft(spectrum, size)
+    stuffed[::UPSAMPLE] = channel  # converts to float64 here, one channel at a time
     offset = HALF_TAPS * UPSAMPLE  # the kernel's centre sits at its middle tap
-    return np.asarray(full[offset : offset + len(stuffed)], dtype=np.float64)
+    return fft_convolve(stuffed, _KERNEL)[offset : offset + len(stuffed)]
 
 
-def true_peak_linear(samples: npt.NDArray[np.float64], core_offset: int) -> float:
+def true_peak_linear(samples: npt.NDArray[np.floating[Any]], core_offset: int) -> float:
     """The largest |value| between samples over the core (`core_offset` samples into the window),
     for a (count, channels) window. Zero for an empty core.
 
@@ -51,5 +52,5 @@ def true_peak_linear(samples: npt.NDArray[np.float64], core_offset: int) -> floa
         upsampled = oversample(samples[:, channel])
         core = upsampled[core_offset * UPSAMPLE : end]
         if core.size:
-            peak = max(peak, float(np.max(np.abs(core))))
+            peak = max(peak, float(np.max(core)), -float(np.min(core)))  # no abs() copy
     return peak
