@@ -85,7 +85,7 @@ def gradual_predictions(path: Path) -> list[tuple[float, float]]:
     for chunk in chunk_stream(path, Config(), 0, None):
         if not isinstance(chunk, Chunk):
             raise TypeError("the decoder yields chunks")
-        seg = segment(frame_distances(chunk.frames), chunk.context_frames)
+        seg = segment(frame_distances(chunk.frames), chunk.context_frames, chunk.frames)
         for a, b in seg.gradual:
             found.append((chunk.first_frame_s + a / chunk.fps, chunk.first_frame_s + b / chunk.fps))
     return found
