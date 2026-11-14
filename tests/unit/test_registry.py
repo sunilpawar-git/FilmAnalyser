@@ -127,7 +127,7 @@ def _audio_chunk() -> Chunk:
     samples = rng.uniform(-0.5, 0.5, size=(round(1.2 * AUDIO_RATE), 1)).astype(np.float32)
     voice = np.full(len(samples) // VOICE_WINDOW, 0.2, dtype=np.float32)
     audio = Audio(rate=AUDIO_RATE, start_s=0.0, samples=samples, voice=voice)
-    return dataclasses.replace(chunk, audio=audio)
+    return dataclasses.replace(chunk, audio=audio, audio_hires=audio)
 
 
 def test_a_new_extractor_module_is_discovered_without_editing_existing_ones(

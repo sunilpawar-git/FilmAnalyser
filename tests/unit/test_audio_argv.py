@@ -10,6 +10,7 @@ import pytest
 from filmanalyser.core.config import AUDIO_RATE
 from filmanalyser.core.errors import DecodeError, InputError
 from filmanalyser.media.audio import (
+    PcmFormat,
     _fit,
     audio_channels,
     audio_probe_argv,
@@ -23,7 +24,7 @@ FILM = Path("film.mp4")  # a relative name: these functions only build argument 
 
 
 def _argv(start: float = 1.5, duration: float = 2.0, channels: int = 2) -> list[str]:
-    return decode_argv("/usr/bin/ffmpeg", FILM, start, duration, channels)
+    return decode_argv("/usr/bin/ffmpeg", FILM, start, duration, PcmFormat(channels, AUDIO_RATE))
 
 
 def test_decode_argv_is_a_list_with_the_tool_first() -> None:
@@ -130,7 +131,7 @@ def test_a_timed_out_decode_is_an_audio_failure(monkeypatch: pytest.MonkeyPatch)
 
     monkeypatch.setattr(subprocess, "run", expired)
     with pytest.raises(DecodeError) as info:
-        decode_window(FILM, 0.0, 1.0, 1)
+        decode_window(FILM, 0.0, 1.0, PcmFormat(1, AUDIO_RATE))
     assert info.value.key == "error.decode.audio_failed"
 
 

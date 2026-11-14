@@ -29,7 +29,8 @@ EXTRACT_BUDGET_FRACTION = (
 
 # Audio features (SSOT; consumed by media/ and extractors/). Chosen against synthetic clips with
 # known ground truth (DECISIONS #60). Audio is decoded at AUDIO_RATE: Silero VAD's rate.
-AUDIO_RATE = 16000  # Hz the decoder resamples to (BS.1770 specifies 48 kHz; see DECISIONS #61)
+AUDIO_RATE = 16000  # Hz for speech (Silero VAD) and the classifier's windows
+AUDIO_HIRES_RATE = 48000  # Hz for loudness and true peak: BS.1770's own rate (DECISIONS #72)
 AUDIO_MAX_CHANNELS = MAX_AUDIO_CHANNELS  # up to 5.1 natively (DECISIONS #68); more is downmixed
 VOICE_WINDOW = 512  # samples per voice decision (32 ms at 16 kHz): the Silero window size
 VOICE_CONTEXT = 64  # samples of the previous window the model reads with each window (Silero v5+)

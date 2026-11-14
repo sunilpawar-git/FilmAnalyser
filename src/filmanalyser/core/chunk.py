@@ -102,7 +102,8 @@ class Chunk:
     fps: float
     frames: Frames
     context_frames: int
-    audio: Audio | None = None
+    audio: Audio | None = None  # speech rate (AUDIO_RATE): VAD and the classifier
+    audio_hires: Audio | None = None  # loudness rate (AUDIO_HIRES_RATE): loudness and true peak
 
     def __post_init__(self) -> None:
         if self.index < 0 or self.fps <= 0 or self.end_s <= self.start_s:
@@ -113,8 +114,9 @@ class Chunk:
         if not 0 <= self.context_frames <= len(frames):
             raise _bad("context_frames")
         object.__setattr__(self, "frames", _locked(frames))
-        if self.audio is not None and abs(self.audio.start_s - self.first_frame_s) > 1e-9:
-            raise _bad("audio")  # the audio must cover the same window as the frames
+        for window in (self.audio, self.audio_hires):
+            if window is not None and abs(window.start_s - self.first_frame_s) > 1e-9:
+                raise _bad("audio")  # every audio window covers the same span as the frames
 
     @property
     def core(self) -> Frames:
@@ -130,13 +132,16 @@ class Chunk:
     def duration_s(self) -> float:
         return self.end_s - self.start_s
 
+    def core_offset_in(self, window: Audio) -> int:
+        """Sample index in `window` where the core starts: the context's length at that rate."""
+        return round(self.context_frames * window.rate / self.fps)
+
     @property
     def audio_core_offset(self) -> int:
-        """Sample index (in `audio.samples`) where the core window starts: the context's length in
-        seconds, at the audio rate. Needs audio; 0 without context."""
+        """Sample index (in `audio.samples`) where the core window starts. Needs audio."""
         if self.audio is None:
             raise _bad("audio")
-        return round(self.context_frames * self.audio.rate / self.fps)
+        return self.core_offset_in(self.audio)
 
     @property
     def core_audio(self) -> Samples:
