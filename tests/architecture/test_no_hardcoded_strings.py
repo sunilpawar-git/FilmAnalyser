@@ -18,6 +18,7 @@ TECHNICAL = {"utf-8", "__main__", "r", "rb", "w", "wb"}  # not user-facing
 _TECHNICAL_PATTERNS = (
     re.compile(r"^--?[a-z][a-z-]*$"),  # -v, --out, --report
     re.compile(r"^\.\d+[fge]$|^%\(\w+\)s$"),  # '.1f', '%(message)s'
+    re.compile(r"^[.*\d]*[dfgesx]$"),  # the format spec parts of an f-string: 'f', '02d'
     re.compile(r"^[a-z][a-z0-9]*([._][a-z0-9]+)+$"),  # start_s, shot_cuts.cuts, report.html
 )
 LABEL_ATTRS = {"alt", "title", "aria-label", "placeholder"}
@@ -135,6 +136,13 @@ def test_guard_allows_docstrings_annotations_and_keys(tmp_path: Path) -> None:
     source = '"""Doc."""\nfrom typing import Literal\nx: Literal["a", "b"]\ny = t("app.name")\n'
     root = make_package(tmp_path, "cli/m.py", source)
     assert scan(root, frozenset({"app.name"})) == []
+
+
+def test_guard_allows_format_specs_but_not_words(tmp_path: Path) -> None:
+    root = make_package(tmp_path, "report/m.py", 'x = f"{1:02d} {2.0:.1f}"\n')
+    assert scan(root, frozenset()) == []
+    root = make_package(tmp_path, "report/m.py", 'x = "done"\ny = "fast"\n')
+    assert len(scan(root, frozenset())) == 2
 
 
 def test_guard_allows_separators(tmp_path: Path) -> None:

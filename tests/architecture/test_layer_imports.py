@@ -23,15 +23,22 @@ ALLOWED: dict[str, set[str]] = {
     "report": {"core", "analysis"},
     "cli": {"core", "pipeline", "report", "storage"},
 }
-# Within report/, only the view model may touch analysis; views (renderer, charts) may not.
+# Within report/, only the view model (viewmodel.py and its viewmodel_* parts) may touch analysis;
+# views (renderer, templates) may not. The chart geometry and the text writers are pure too.
 VIEWMODEL = "filmanalyser.report.viewmodel"
 # Pure layers: immutable data in, immutable data out. No I/O, no process or platform access.
-PURE_PREFIXES = ("filmanalyser.core", "filmanalyser.analysis", VIEWMODEL)
+PURE_PREFIXES = (
+    "filmanalyser.core",
+    "filmanalyser.analysis",
+    VIEWMODEL,
+    "filmanalyser.report.charts",
+    "filmanalyser.report.display",
+)
 BANNED_IN_PURE = {"subprocess", "pathlib", "os", "sys", "shutil", "tempfile", "socket", "io"}
 
 
 def _is_pure(module: str) -> bool:
-    return any(module == p or module.startswith(p + ".") for p in PURE_PREFIXES)
+    return any(module == p or module.startswith((p + ".", p + "_")) for p in PURE_PREFIXES)
 
 
 def _layer_violations(module: str, target: str) -> str | None:
@@ -119,6 +126,21 @@ def test_pure_core_may_not_import_io_modules(tmp_path: Path) -> None:
         assert violations(root) == [
             f"filmanalyser.core.io_bad:1: pure module may not import '{name}'"
         ]
+
+
+def test_viewmodel_parts_may_import_analysis_but_not_io(tmp_path: Path) -> None:
+    root = make_package(
+        tmp_path, "report/viewmodel_charts.py", "from filmanalyser.analysis import x\n"
+    )
+    assert violations(root) == []
+    root = make_package(tmp_path, "report/viewmodel_charts.py", "import os\n")
+    assert len(violations(root)) == 1
+
+
+def test_chart_geometry_and_display_text_are_pure(tmp_path: Path) -> None:
+    for name in ("charts", "display"):
+        root = make_package(tmp_path / name, f"report/{name}.py", "import pathlib\n")
+        assert len(violations(root)) == 1
 
 
 def test_pure_analysis_and_viewmodel_may_not_import_io(tmp_path: Path) -> None:
