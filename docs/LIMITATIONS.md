@@ -74,6 +74,15 @@ results has been checked against anything a person has judged.
   threshold and inside the range noise reaches, so no break is reported. The threshold was not lowered
   to produce one. Whether the film has no break in these zones, or has breaks the features cannot see,
   is not known.
+- **Five-film check against unverified times: not validated** (DECISIONS #94). On Moonrise Kingdom,
+  Kill Bill Vol. 1 and 2, Licorice Pizza and Obsession (2026), the default thresholds reported no
+  act break in the four films that were expected to have them (0 of 7 expected breaks), and one
+  break (1:36, score 1.57) in Licorice Pizza, which has no clear act structure. With the threshold
+  removed, 3 of the 7 expected breaks have a candidate within 5 minutes, at scores of 1.05 to 1.12,
+  below what synthetic noise reaches (1.36). The tension peak matched an expected climax in one of
+  five films (Moonrise Kingdom, 1:21, below the reporting threshold). The expected times were an
+  AI-written answer, not checked against the films, so this neither shows that detection works nor
+  that it fails; no threshold was changed.
 - **Short films are reported as too short, not as having no acts** (DECISIONS #93). A boundary needs
   5 chunks on each side, so at the default 60 s chunk a film must run 13 minutes before both zones
   hold a boundary that can be scored; a shorter film's result lists the zones it could not judge
