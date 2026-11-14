@@ -50,7 +50,7 @@ def _features(mono: np.ndarray, voice: np.ndarray, core_offset: int = 0) -> dict
 def test_the_extractor_is_registered_as_needing_audio() -> None:
     assert isinstance(EXTRACTOR, Extractor)
     assert EXTRACTOR.name == "speech_music"
-    assert EXTRACTOR.features == ("silence_ratio", "speech_ratio", "music_ratio", "other_ratio")
+    assert EXTRACTOR.features == ("silence_ratio", "speech_ratio", "tonal_ratio", "other_ratio")
     assert EXTRACTOR.features == FEATURES
     assert EXTRACTOR.needs_audio is True
 
@@ -64,21 +64,21 @@ def test_silence_is_silence() -> None:
 def test_a_steady_tone_is_music() -> None:
     tone = _tone(2.0)
     out = _features(tone, _voice(tone, 0.0))
-    assert out["music_ratio"] == pytest.approx(1.0, abs=TOLERANCE)
+    assert out["tonal_ratio"] == pytest.approx(1.0, abs=TOLERANCE)
 
 
 def test_white_noise_is_other_not_music() -> None:
     noise = _noise(2.0)
     out = _features(noise, _voice(noise, 0.0))
     assert out["other_ratio"] == pytest.approx(1.0, abs=TOLERANCE)
-    assert out["music_ratio"] == pytest.approx(0.0, abs=TOLERANCE)
+    assert out["tonal_ratio"] == pytest.approx(0.0, abs=TOLERANCE)
 
 
 def test_a_voiced_window_is_speech_whatever_it_sounds_like() -> None:
     tone = _tone(2.0)
     out = _features(tone, _voice(tone, 0.9))
     assert out["speech_ratio"] == pytest.approx(1.0, abs=TOLERANCE)
-    assert out["music_ratio"] == pytest.approx(0.0, abs=TOLERANCE)
+    assert out["tonal_ratio"] == pytest.approx(0.0, abs=TOLERANCE)
 
 
 def test_the_speech_threshold_is_inclusive_at_its_value() -> None:
@@ -99,7 +99,7 @@ def test_half_silence_then_tone_splits_the_ratios() -> None:
     mono = np.concatenate([_silence(1.0), _tone(1.0)])
     out = _features(mono, _voice(mono, 0.0))
     assert out["silence_ratio"] == pytest.approx(0.5, abs=TOLERANCE)
-    assert out["music_ratio"] == pytest.approx(0.5, abs=TOLERANCE)
+    assert out["tonal_ratio"] == pytest.approx(0.5, abs=TOLERANCE)
 
 
 def test_the_context_before_the_core_is_not_counted() -> None:
@@ -134,7 +134,7 @@ def test_extract_reads_the_chunk_audio_and_its_voice() -> None:
         audio=Audio(rate=RATE, start_s=0.0, samples=tone.reshape(-1, 1), voice=_voice(tone, 0.0)),
     )  # fmt: skip
     out = EXTRACTOR.extract(chunk)
-    assert out["music_ratio"] == pytest.approx(1.0, abs=TOLERANCE)
+    assert out["tonal_ratio"] == pytest.approx(1.0, abs=TOLERANCE)
 
 
 def test_extract_refuses_a_chunk_without_voice_probabilities() -> None:
