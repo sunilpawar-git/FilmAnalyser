@@ -6,7 +6,7 @@ distances; a fade to black is a plateau with the black frame as a spike inside i
 
 import numpy as np
 
-from filmanalyser.extractors.shot_cuts import _spike_blocks, _stretches, segment
+from filmanalyser.extractors.shot_cuts import _spike_blocks, _stretches, blend_residual, segment
 
 
 def _d(values: list[float]) -> np.ndarray:
@@ -77,3 +77,46 @@ def test_spike_blocks_group_adjacent_indices() -> None:
 
 def test_stretches_are_the_frames_between_blocks() -> None:
     assert _stretches(0, 10, [(3, 3), (7, 8)]) == [(0, 3), (4, 7), (9, 10)]
+
+
+# ---- the blend test (DECISIONS #84) ----------------------------------------------------------
+
+
+def _frames_between(first: np.ndarray, last: np.ndarray, middles: list[np.ndarray]) -> np.ndarray:
+    return np.stack([first, *middles, last]).astype(np.uint8)
+
+
+def _scene(seed: int) -> np.ndarray:
+    return np.random.default_rng(seed).integers(0, 256, size=(18, 32, 3)).astype(np.float64)
+
+
+def test_a_dissolve_is_a_perfect_blend_of_its_ends() -> None:
+    a, b = _scene(1), _scene(2)
+    middles = [(1 - w) * a + w * b for w in (0.25, 0.5, 0.75)]
+    assert blend_residual(_frames_between(a, b, middles), 0, 4) < 0.05
+
+
+def test_a_fade_to_black_is_a_blend_with_black() -> None:
+    a, black = _scene(3), np.zeros((18, 32, 3))
+    middles = [(1 - w) * a for w in (0.25, 0.5, 0.75)]
+    assert blend_residual(_frames_between(a, black, middles), 0, 4) < 0.05
+
+
+def test_an_unrelated_middle_frame_is_not_a_blend() -> None:
+    a, b = _scene(4), _scene(5)
+    middles = [_scene(6), _scene(7), _scene(8)]  # a flash, an effect, a different picture
+    assert blend_residual(_frames_between(a, b, middles), 0, 4) > 0.5
+
+
+def test_two_frames_with_nothing_between_have_no_residual() -> None:
+    assert blend_residual(_frames_between(_scene(1), _scene(2), []), 0, 1) == 0.0
+
+
+def test_with_frames_a_stretch_that_is_not_a_blend_is_not_a_transition() -> None:
+    distances = np.asarray([0.0, *([0.1] * 8), 0.0])
+    a, b = _scene(1), _scene(2)
+    blend = [(1 - w) * a + w * b for w in np.linspace(0.1, 0.9, 8)]
+    good = _frames_between(a, b, blend)
+    noise = _frames_between(a, b, [_scene(10 + i) for i in range(8)])
+    assert len(segment(distances, 0, good).gradual) == 1
+    assert segment(distances, 0, noise).gradual == ()

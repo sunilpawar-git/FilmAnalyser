@@ -6,24 +6,21 @@ output can and cannot be trusted for.
 
 ## Shots and cuts
 
-- **Hard cuts are found with good precision, and recall is limited.** On the verified stitched film
-  (16 hard cuts, inspected frame by frame; DECISIONS #82), at a 0.25 s tolerance the detector gives
-  precision 92% and recall 69%. The misses are cuts whose picture change stays below the 0.40
-  threshold (29.17 s at 0.23, 44.0 s at 0.38). At one analysis frame (0.08 s) recall is 50%: cut
-  timing is reliable to about a quarter of a second. Lowering the threshold or using a neighbourhood
-  test adds false cuts on camera movement, and was measured and rejected (DECISIONS #80).
-- **Gradual transitions are found on clean footage, but busy footage gives false ones.** A dissolve
-  between two textured scenes and a fade to black are found at the right times (DECISIONS #79), and
-  both gradual transitions on the verified film are found with no false ones. On Tears of Steel,
-  however, 33 transitions were reported in 12 minutes. Of nine sampled, only about two were real
-  fades; the rest were flashes, flicker and motion. Treat `gradual` as a candidate list, not a count
-  of fades, on busy footage.
-- **Some joins are missed.** A join at 49.9 s (Tears of Steel into an AVA clip) changes by 0.39 and
-  is missed at the 0.40 threshold.
+- **Hard cuts.** On the stitched film of real shots, with all 18 cuts verified on the detector's own
+  frame pairs, precision and recall are both 100% at 0.25 s, and 78% at one analysis frame (0.08 s);
+  cut timing is reliable to a quarter of a second (DECISIONS #83). On a fresh ten minutes of The
+  Odyssey, every one of 83 small-change cuts was found. Effects-heavy footage still produces some false
+  cuts: on Tears of Steel, 5 of 35 effect changes (holograms, explosions, fast motion) pass the rule.
+- **Gradual transitions.** Dissolves and fades are found when the frames are a real blend of the two
+  pictures (DECISIONS #84). On Tears of Steel, 4 transitions are reported in 12 minutes: two fades and
+  two on-screen hologram dissolves; camera moves, flashes and effects are rejected. A transition that
+  is not a blend (a wipe, a whip pan) is not reported. Evidence for gradual transitions comes from
+  synthetic clips and one film; no labelled set of real dissolves has been measured.
 
 ## Speech, music and silence
 
-- **Speech under music is missed, and no cheap fix works.** A lower voice threshold (0.1) recovers only
+- **Speech under music is missed, and neither threshold changes nor YAMNet fix it** (YAMNet raises
+  speech-under-music recall from 37% to 42%, DECISIONS #85). A lower voice threshold (0.1) recovers only
   about 8 points of recall and costs about 7 points of precision; a syllable-rate cue does not separate
   speech under music from tonal music (DECISIONS #81). The remaining options are a different voice
   model or source separation, which need a decision.
