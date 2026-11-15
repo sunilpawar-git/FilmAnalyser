@@ -9,7 +9,7 @@ The MVP is done only when every item is checked, on a film **not used during dev
 - [x] Run is resumable after a crash mid-film (`test_resume.py`, `test_resume_grid.py`, real footage; DECISIONS #54)
 
 ## Output
-- [ ] Report contains all MVP metrics (all but the colour palette: P7-1): shot cuts / average shot length, cut-rate curve, colour palette and brightness, loudness profile, speech/music/silence ratio, tension curve, act breaks, flagged timestamps
+- [x] Report contains all MVP metrics (the colour palette is `color` v2, DECISIONS #106; `test_report_render.py`): shot cuts / average shot length, cut-rate curve, colour palette and brightness, loudness profile, speech/music/silence ratio, tension curve, act breaks, flagged timestamps
 - [x] Every flagged issue carries a timestamp (`test_full_pipeline.py`)
 - [x] Features are stored in versioned Parquet; re-analysis does not re-decode the film (`test_full_pipeline.py`)
 

@@ -61,7 +61,7 @@ Messages go to stderr, in plain words, naming files by basename only.
 ## What the report holds
 
 Hard cuts and average shot length, the cut-rate curve, brightness, contrast, colourfulness and
-warmth, the loudness profile, the speech / non-speech-and-tonal / silence shares, the tension curve,
+warmth, the dominant colours (a strip and the film's top five), the loudness profile, the speech / non-speech-and-tonal / silence shares, the tension curve,
 act breaks, pacing plateaus, and flagged moments, each with a timestamp. The page is one file: no
 scripts, no network, light and dark themes.
 
