@@ -120,8 +120,10 @@ results has been checked against anything a person has judged.
   tension peak, plateaus and flags carry a note at the top (unvalidated, open items P6-1 and P6-2,
   calibrated on synthetic data only; DECISIONS #96). The report cannot add validity the analysis does
   not have.
-- **No colour palette.** The report charts brightness, contrast, colourfulness and warmth. It does not
-  show dominant colours, because no feature stores them (DECISIONS #97, open item P7-1).
+- **The palette is coarse.** Dominant colours come from a grid of 64 colours (4 levels per channel),
+  three per chunk, so a colour is right to about 12% of the scale and two close shades can share one
+  cube (DECISIONS #106). It has been checked on constructed frames, not against another palette tool,
+  and not yet looked at on a real film (open item P8-1).
 - **Seen on one real film.** The Odyssey's report (2:52:35, 173 chunks) was opened at full length in
   light and dark and reads correctly (DECISIONS #103). The reports of the other local films were not
   opened, and none of the owner's validation films has been (open item P8-1). One burst (79 cuts per
