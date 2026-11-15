@@ -21,6 +21,15 @@ BRIGHTNESS = f"{COLOR}.brightness"
 CONTRAST = f"{COLOR}.contrast"
 COLOURFULNESS = f"{COLOR}.colourfulness"
 WARMTH = f"{COLOR}.warmth"
+PALETTE_SIZE = 3  # dominant colours kept per chunk (DECISIONS 106)
+PALETTE_PARTS = ("red", "green", "blue", "share")  # red, green, blue in 0..1; share of the picture
+
+
+def palette_column(rank: int, part: str) -> str:
+    """The store column of palette colour `rank` (1 is the most common) and one of its parts."""
+    return f"{COLOR}.palette_{rank}_{part}"
+
+
 # The analysis reads these store columns (the letterbox share is left out: a change of aspect ratio
 # would swamp every other feature, DECISIONS #90). A film without audio simply lacks the audio ones.
 VIDEO_STATE_COLUMNS = (BRIGHTNESS, CONTRAST, COLOURFULNESS, WARMTH)

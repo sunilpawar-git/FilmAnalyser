@@ -2,8 +2,9 @@
 
 Brightness is the mean BT.709 luma (0..1). Contrast is the spread of luma. Colourfulness is the
 mean of (max - min) over the channels (0..1). Warmth is the mean of (R - B) (-1..1). Letterbox is
-the share of the frame height that is bars (0..1). Every value is finite; an empty picture is
-reported as zero rather than NaN (DECISIONS #43).
+the share of the frame height that is bars (0..1). The palette is the three most common colours
+(DECISIONS 106). Every value is finite; an empty picture is reported as zero rather than NaN
+(DECISIONS #43).
 """
 
 from collections.abc import Mapping
@@ -13,11 +14,12 @@ import numpy as np
 
 from filmanalyser.core.chunk import Chunk
 from filmanalyser.core.config import LUMA_WEIGHTS
+from filmanalyser.extractors import palette
 from filmanalyser.extractors.letterbox import letterbox_bars
 
 NAME = "color"
-VERSION = 1
-FEATURES = ("brightness", "contrast", "colourfulness", "warmth", "letterbox")
+VERSION = 2  # 2: the palette (DECISIONS 106)
+FEATURES = ("brightness", "contrast", "colourfulness", "warmth", "letterbox", *palette.FEATURES)
 
 
 def _sums(picture: np.ndarray) -> tuple[float, float, float, float, float]:
@@ -52,6 +54,7 @@ def picture_features(chunk: Chunk) -> dict[str, float]:
         "colourfulness": total[3] / count,
         "warmth": total[4] / count,
         "letterbox": (top + bottom) / height,
+        **palette.palette_features(palette.cube_counts(frames, top, bottom)),
     }
 
 

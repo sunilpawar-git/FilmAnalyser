@@ -32,6 +32,54 @@
    0.0,
    0.0
   ],
+  "color.palette_1_red": [
+   0.878,
+   0.125
+  ],
+  "color.palette_1_green": [
+   0.125,
+   0.125
+  ],
+  "color.palette_1_blue": [
+   0.125,
+   0.878
+  ],
+  "color.palette_1_share": [
+   1.0,
+   1.0
+  ],
+  "color.palette_2_red": [
+   0.0,
+   0.0
+  ],
+  "color.palette_2_green": [
+   0.0,
+   0.0
+  ],
+  "color.palette_2_blue": [
+   0.0,
+   0.0
+  ],
+  "color.palette_2_share": [
+   0.0,
+   0.0
+  ],
+  "color.palette_3_red": [
+   0.0,
+   0.0
+  ],
+  "color.palette_3_green": [
+   0.0,
+   0.0
+  ],
+  "color.palette_3_blue": [
+   0.0,
+   0.0
+  ],
+  "color.palette_3_share": [
+   0.0,
+   0.0
+  ],
   "shot_cuts.cuts": [
    0.0,
    1.0
