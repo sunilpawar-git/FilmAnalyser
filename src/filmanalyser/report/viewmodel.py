@@ -20,6 +20,7 @@ from filmanalyser.core import features as f
 from filmanalyser.core.config import TENSION_MIN_PEAK_Z
 from filmanalyser.report.charts import Chart
 from filmanalyser.report.display import clock_text, number_text
+from filmanalyser.report.palette_view import PaletteView, build_palette
 from filmanalyser.report.resources.keys import feature_key, flag_kind_key, flag_value_key
 from filmanalyser.report.viewmodel_charts import build_charts
 
@@ -119,6 +120,7 @@ class ReportView:
     pacing: PacingView
     flags: tuple[FlagRow, ...]
     charts: tuple[Chart, ...]
+    palette: PaletteView | None  # None for a store with no palette columns
 
 
 def _overview(columns: Columns, pacing: Pacing) -> Overview:
@@ -223,4 +225,5 @@ def build_view(columns: Columns, film: str) -> ReportView:
         pacing=_pacing(pacing),
         flags=tuple(_flag(flag) for flag in flags),
         charts=build_charts(timeline, acts, tension, pacing),
+        palette=build_palette(columns),
     )

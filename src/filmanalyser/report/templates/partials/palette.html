@@ -1,0 +1,15 @@
+{% if view.palette %}
+<h2>{{ t('section.palette') }}</h2>
+<p class="note">{{ t('palette.note') }}</p>
+<figure>
+  <svg viewBox="0 0 {{ view.palette.width }} {{ view.palette.height + 8 }}" role="img" aria-label="{{ t('palette.strip.label') }}">
+    {% for col in view.palette.columns %}{% for s in col.segments %}<rect x="{{ col.x }}" y="{{ s.y }}" width="{{ col.width }}" height="{{ s.height }}" fill="{{ s.fill }}"></rect>{% endfor %}{% endfor %}
+    <rect class="strip-frame" x="0" y="{{ view.palette.top }}" width="{{ view.palette.width }}" height="{{ view.palette.height }}"></rect>
+  </svg>
+  <figcaption>{{ t('palette.strip.caption') }}</figcaption>
+</figure>
+<p>{{ t('palette.film') }}</p>
+<ul class="swatches">
+  {% for s in view.palette.swatches %}<li><svg class="chip" viewBox="0 0 1 1" aria-hidden="true"><rect width="1" height="1" fill="{{ s.fill }}"></rect></svg>{{ t('palette.share', percent=s.share_text) }}</li>{% endfor %}
+</ul>
+{% endif %}

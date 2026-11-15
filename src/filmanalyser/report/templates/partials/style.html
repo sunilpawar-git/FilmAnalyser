@@ -39,5 +39,8 @@ svg { width: 100%; height: auto; display: block; }
 .swatch.break { border-top-color: var(--warning); border-top-style: dashed; }
 .swatch.peak { border-top-color: var(--danger); }
 .swatch.band { border-top: 8px solid var(--accent); opacity: 0.3; }
+.strip-frame { fill: none; stroke: var(--border); stroke-width: 1; }
+.swatches { list-style: none; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.chip { display: inline-block; width: 20px; height: 20px; vertical-align: middle; margin-right: 6px; border: 1px solid var(--border); }
 .items span:not(:last-child)::after { content: ", "; }
 </style>

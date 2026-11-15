@@ -181,3 +181,7 @@ def test_the_same_columns_give_the_same_view() -> None:
 @pytest.mark.parametrize("count", [1, 2, 5, 13])
 def test_very_short_films_build_without_error(count: int) -> None:
     assert view(timeline(count)).chunk_count <= count
+
+
+def test_a_store_without_a_palette_has_no_palette_section() -> None:
+    assert view().palette is None

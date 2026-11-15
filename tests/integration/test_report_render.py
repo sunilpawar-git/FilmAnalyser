@@ -35,8 +35,14 @@ def page(tmp_path_factory: pytest.TempPathFactory) -> str:
 
 
 def test_a_real_clip_gives_every_chart_and_the_unvalidated_notice(page: str) -> None:
-    assert page.count("<svg") == len(CHARTS)
+    assert page.count("<svg") == len(CHARTS) + 1 + page.count('class="chip"')  # + the palette
     assert "P6-1" in page and "P6-2" in page
+
+
+def test_the_report_shows_the_palette_of_the_clip(page: str) -> None:
+    assert STRINGS.text("section.palette") in page
+    assert STRINGS.text("palette.strip.label") in page
+    assert re.search(r'<rect x="[\d.]+" y="[\d.]+" [^>]*fill="#[0-9a-f]{6}"', page)
 
 
 def test_the_film_name_is_escaped(page: str) -> None:
@@ -55,6 +61,7 @@ def test_the_page_is_self_contained(page: str) -> None:
 
 def test_colour_appears_only_as_tokens(page: str) -> None:
     body = re.sub(r":root \{[^}]*\}", "", page)
+    body = re.sub(r'fill="#[0-9a-f]{6}"', "", body)  # measured film colours, not design colours
     assert not re.search(r"#[0-9a-fA-F]{3,8}\b|\brgba?\(|\bhsla?\(", body)
 
 
@@ -68,7 +75,7 @@ def test_a_film_too_short_to_judge_says_so_and_never_says_no_break(tmp_path: Pat
 def test_a_film_without_sound_says_so_and_draws_no_loudness_chart(tmp_path: Path) -> None:
     shown = _page(make_silent_clip(tmp_path / "silent.mp4", 40.0), tmp_path / "store")
     assert STRINGS.text("act.audio.not_used") in shown
-    assert shown.count("<svg") == 3
+    assert shown.count("<svg") == 3 + 1 + shown.count('class="chip"')  # + the palette
 
 
 def test_the_same_store_renders_the_same_page(tmp_path: Path) -> None:
