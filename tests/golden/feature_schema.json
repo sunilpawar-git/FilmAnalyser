@@ -1,15 +1,27 @@
 {
- "version": "20f53e19117520166faa09d65cc8019344191059a8f8a053fb6aaca86ea608a0",
+ "version": "0faf2f2e95b4b9e62c8adbd49c4a3e9ef01bd93421c553b96ab058ea7cea5649",
  "extractors": [
   [
    "color",
-   1,
+   2,
    [
     "brightness",
     "contrast",
     "colourfulness",
     "warmth",
-    "letterbox"
+    "letterbox",
+    "palette_1_red",
+    "palette_1_green",
+    "palette_1_blue",
+    "palette_1_share",
+    "palette_2_red",
+    "palette_2_green",
+    "palette_2_blue",
+    "palette_2_share",
+    "palette_3_red",
+    "palette_3_green",
+    "palette_3_blue",
+    "palette_3_share"
    ]
   ],
   [
