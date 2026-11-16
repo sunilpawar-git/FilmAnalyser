@@ -124,6 +124,7 @@ results has been checked against anything a person has judged.
   three per chunk, so a colour is right to about 12% of the scale and two close shades can share one
   cube (DECISIONS #106). It has been checked on constructed frames, not against another palette tool,
   and not yet looked at on a real film (open item P8-1).
+- **Cut detection is about 80% on a low-resolution documentary.** On the public BBC Planet Earth episode 10 (360 x 288, 25 fps, 341 labelled cuts) precision is 82.9% and recall 81.2% at 0.25 s (DECISIONS #109), well below the near-100% on the feature films the rule was calibrated on. The causes of the misses were not studied.
 - **The palette is mostly near-black.** On three films the darkest cube (about #202020) holds 45% to 61% of the picture, so the film's top-five colours are one dark grey plus four minor colours (DECISIONS #108). Excluding near-black or finer cubes would help and would change `color` again (a new version and re-extraction).
 - **The tension peak missed the climax on two of three films.** Against climaxes located in the files from published plot summaries (not owner-verified), the highest intensity value (called tension in the code) was within a minute of the climax in Moonrise Kingdom, 17 minutes early in Kill Bill 1 and 40 minutes early in Kill Bill 2, and none reached the reporting height, so none was reported (DECISIONS #107, open item P6-2). Act breaks have no published times to compare with (P6-1).
 - **Seen on one real film.** The Odyssey's report (2:52:35, 173 chunks) was opened at full length in
