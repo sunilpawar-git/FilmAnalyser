@@ -35,7 +35,8 @@ def test_the_page_is_a_full_document(html: str) -> None:
 
 def test_the_unvalidated_notice_is_on_the_page(html: str) -> None:
     assert text("notice.unvalidated") in html
-    assert "P6-1" in html and "P6-2" in html and "synthetic" in html
+    assert "P6-1" in html and "P6-2" in html
+    assert "missed it in two" in html  # the measured result (DECISIONS 107)
 
 
 def test_the_notice_appears_before_any_finding(html: str) -> None:

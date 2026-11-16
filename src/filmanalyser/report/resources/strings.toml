@@ -77,14 +77,14 @@ empty = "No chunks were analysed, so there is nothing to report."
 
 [notice]
 heading = "Read this first"
-unvalidated = "These are observations, not findings. The act breaks, the tension peak, the pacing plateaus and the flags below are unvalidated (open items P6-1 and P6-2): their rules and thresholds were calibrated on synthetic data only, and no film with known act structure or a known climax has been checked against them."
+unvalidated = "These are observations of the picture and sound, not findings about the story. The largest shifts, the intensity peak, the pacing plateaus and the flags below describe what was measured. On three feature films the intensity peak found the story's climax in one and missed it in two, and no source of act-break times was available to check the shifts against (open items P6-1 and P6-2)."
 
 [section]
 overview = "Overview"
 charts = "Curves"
 palette = "Colour palette"
-acts = "Act breaks"
-tension = "Tension"
+acts = "Largest shifts in the film"
+tension = "Intensity"
 pacing = "Pacing"
 flags = "Flagged moments"
 
@@ -94,30 +94,30 @@ average_shot = "Average shot length (seconds)"
 mean_rate = "Mean cut rate (cuts and gradual transitions per minute)"
 
 [act]
-note = "A break is where the film's measured state changes most, inside the two zones where an act break classically falls. None is forced: a zone with no strong enough change has no break."
+note = "A shift is where the film's measured state (cut rate, loudness, speech, silence and picture) changes most, inside the two zones where an act break classically falls. It is not a claim that an act break is there, and it has not been checked against real act structure. None is forced: a zone with no strong enough change has no shift."
 features = "Features compared:"
 col_time = "Time"
 col_share = "Share of the film (%)"
 col_score = "Change score"
 col_moved = "Moved most"
-none = "No act break was found."
-spans = "The film in acts"
-span = "Act $number: $start to $end"
+none = "No shift was found."
+spans = "The film split at those shifts"
+span = "Part $number: $start to $end"
 
 [act.audio]
 used = "Sound was used: the loudness, speech, tonal and silence measurements are part of the comparison."
-not_used = "Sound was not used: this film has no audio measurements, so the breaks come from the picture alone."
+not_used = "Sound was not used: this film has no audio measurements, so the shifts come from the picture alone."
 
 [act.zone]
-found = "Zone $zone: a break at $time."
-empty = "Zone $zone: no break found."
+found = "Zone $zone: a shift at $time."
+empty = "Zone $zone: no shift found."
 too_short = "Zone $zone: too short to judge (needs $needs)."
 
 [tension]
-note = "Tension is the mean of how fast the film is cut and how loud it is, each measured against the film's own average. It is a relative measure, not a rating."
+note = "Intensity is the mean of how fast the film is cut and how loud it is, each measured against the film's own average. It finds loud, fast-cut passages, which need not be the story's climax: a quiet, slowly cut climax scores low. It is a relative measure, not a rating."
 components = "Made of:"
 peak = "Peak at $time, $height standard deviations above the film's average."
-no_peak = "No tension peak reached the minimum height."
+no_peak = "No intensity peak reached the minimum height."
 minimum = "A peak is reported only from $height standard deviations above the average."
 
 [pacing]
@@ -152,7 +152,7 @@ long_take = "$value chunks without a cut"
 
 [feature]
 cut_rate = "Cuts per minute"
-tension = "Tension (standard deviations)"
+tension = "Intensity (standard deviations)"
 
 [feature.loudness]
 integrated_lufs = "Loudness (LUFS)"
@@ -181,8 +181,8 @@ caption = "One column per stretch of the film, left to right in film time; in ea
 time = "Film time (minutes)"
 
 [chart.mark]
-break = "Act break"
-peak = "Tension peak"
+break = "Largest shift"
+peak = "Intensity peak"
 plateau = "Pacing plateau"
 
 [chart.cut_rate]
@@ -190,8 +190,8 @@ label = "Cuts per minute over the film"
 caption = "Cuts and gradual transitions per minute, one point per chunk. Shaded: pacing plateaus."
 
 [chart.tension]
-label = "Tension over the film"
-caption = "Tension, in standard deviations from the film's own average."
+label = "Intensity over the film"
+caption = "Intensity (cut rate and loudness), in standard deviations from the film's own average."
 
 [chart.loudness]
 label = "Loudness over the film"
