@@ -124,6 +124,7 @@ results has been checked against anything a person has judged.
   three per chunk, so a colour is right to about 12% of the scale and two close shades can share one
   cube (DECISIONS #106). It has been checked on constructed frames, not against another palette tool,
   and not yet looked at on a real film (open item P8-1).
+- **The tension peak missed the climax on two of three films.** Against climaxes located in the files from published plot summaries (not owner-verified), the highest tension value was within a minute of the climax in Moonrise Kingdom, 17 minutes early in Kill Bill 1 and 40 minutes early in Kill Bill 2, and none reached the reporting height, so none was reported (DECISIONS #107, open item P6-2). Act breaks have no published times to compare with (P6-1).
 - **Seen on one real film.** The Odyssey's report (2:52:35, 173 chunks) was opened at full length in
   light and dark and reads correctly (DECISIONS #103). The reports of the other local films were not
   opened, and none of the owner's validation films has been (open item P8-1). One burst (79 cuts per
