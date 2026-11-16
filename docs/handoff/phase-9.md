@@ -7,6 +7,15 @@
 - Palette cost measured: 0.03 s per 60 s chunk (160 x 90) on top of 0.23 s for the rest of the extractor.
 - Not done for the palette: it has not been looked at on a real film, in a browser, light or dark (the browser tool was busy). Its HTML was inspected on a rendered synthetic clip only.
 
+## Update 2026-11-16: validation without owner truth (DECISIONS #107)
+The owner has no times or labels to give and asked for published material. Searches found no published act-break times for any of the five films. Climax scenes named by plot summaries were located in the files on frame sheets (Kill Bill 1 about 1:36:45, Kill Bill 2 about 1:59:40, Moonrise Kingdom about 1:21:40; not owner-verified). Fresh runs: peak RAM about 1.0 GB, run time 3:26 to 4:19, all within budget. No act breaks and no tension peak above threshold in any of the three; the highest tension value was near the climax in Moonrise only (1 of 3). Nothing was ticked in ACCEPTANCE. Raw table:
+```
+| Kill Bill Vol. 1 | 1:50:43 | 1024 MB (yes) | 3:26 (yes) | none | 0/0 (n/a) | none (n/a) |
+| Kill Bill Vol. 2 | 2:16:57 | 1020 MB (yes) | 4:19 (yes) | none | 0/0 (n/a) | none (n/a) |
+| Moonrise Kingdom | 1:33:38 | 1013 MB (yes) | 3:28 (yes) | none | 0/0 (n/a) | none (n/a) |
+```
+The act-break and kill/pivot checks need act times nobody has published; the shot-cut spot check needs labels. These remain open unless the owner supplies or approves a different truth source.
+
 ## Still open, with the exact steps
 1. **P8-1 needs from the owner:** paths of 3 familiar films and 1 held-out film; their verified act-break times and climax time for each; hand-labelled shot cuts for a short clip. Write the truth JSON in the `docs/USAGE.md` format with `"verified_by": "owner"`.
 2. Run `scripts/validate_real_film.py` on the four films (it re-extracts every store, because of the palette). Check: peak RAM < 2 GB, run time < 45 min, act breaks within 5 min, tension peak near the real climax. Apply the kill/pivot rule of `ACCEPTANCE.md`. Calibrate `ACT_MIN_SCORE` on the 3 films and test on the held-out one.
