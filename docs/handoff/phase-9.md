@@ -16,6 +16,9 @@ The owner has no times or labels to give and asked for published material. Searc
 ```
 The act-break and kill/pivot checks need act times nobody has published; the shot-cut spot check needs labels. These remain open unless the owner supplies or approves a different truth source.
 
+## Update 2026-11-16 (2): claims reworded, reports viewed (DECISIONS #108)
+PR #23 was merged (rebase). The 1:20:00 coincidence is real action in both Kill Bill films, not an artefact. The report now says 'largest shifts' and 'intensity' and states the measured result; the two ACCEPTANCE Validity boxes stay unticked as failed. The palette is mostly near-black (LIMITATIONS). Shot-cut check on a public dataset: in progress, see DECISIONS when done.
+
 ## Still open, with the exact steps
 1. **P8-1 needs from the owner:** paths of 3 familiar films and 1 held-out film; their verified act-break times and climax time for each; hand-labelled shot cuts for a short clip. Write the truth JSON in the `docs/USAGE.md` format with `"verified_by": "owner"`.
 2. Run `scripts/validate_real_film.py` on the four films (it re-extracts every store, because of the palette). Check: peak RAM < 2 GB, run time < 45 min, act breaks within 5 min, tension peak near the real climax. Apply the kill/pivot rule of `ACCEPTANCE.md`. Calibrate `ACT_MIN_SCORE` on the 3 films and test on the held-out one.

@@ -51,4 +51,4 @@ def test_the_zone_sentences_name_what_the_reader_needs() -> None:
         text("act.zone.too_short", zone=1, needs="13:00")
         == "Zone 1: too short to judge (needs 13:00)."
     )
-    assert text("act.zone.empty", zone=2) == "Zone 2: no break found."
+    assert text("act.zone.empty", zone=2) == "Zone 2: no shift found."
