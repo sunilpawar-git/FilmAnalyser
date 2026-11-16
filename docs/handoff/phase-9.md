@@ -17,7 +17,7 @@ The owner has no times or labels to give and asked for published material. Searc
 The act-break and kill/pivot checks need act times nobody has published; the shot-cut spot check needs labels. These remain open unless the owner supplies or approves a different truth source.
 
 ## Update 2026-11-16 (2): claims reworded, reports viewed (DECISIONS #108)
-PR #23 was merged (rebase). The 1:20:00 coincidence is real action in both Kill Bill films, not an artefact. The report now says 'largest shifts' and 'intensity' and states the measured result; the two ACCEPTANCE Validity boxes stay unticked as failed. The palette is mostly near-black (LIMITATIONS). Shot-cut check on a public dataset: in progress, see DECISIONS when done.
+PR #23 was merged (rebase). The 1:20:00 coincidence is real action in both Kill Bill films, not an artefact. The report now says 'largest shifts' and 'intensity' and states the measured result; the two ACCEPTANCE Validity boxes stay unticked as failed. The palette is mostly near-black (LIMITATIONS). Shot-cut check on a public dataset (BBC Planet Earth ep. 10, CC-BY-4.0, approved download of 323.7 MB): precision 82.9%, recall 81.2% (DECISIONS #109); the ACCEPTANCE box is ticked with that wording. Rerun: download `bbc_10.mp4` and `10_Caves.txt` from zenodo.org/records/14865504, convert adjacent shots to cuts (start frame / 25), score with `scripts/label_format.score_cuts`.
 
 ## Still open, with the exact steps
 1. **P8-1 needs from the owner:** paths of 3 familiar films and 1 held-out film; their verified act-break times and climax time for each; hand-labelled shot cuts for a short clip. Write the truth JSON in the `docs/USAGE.md` format with `"verified_by": "owner"`.

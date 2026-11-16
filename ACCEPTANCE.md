@@ -16,7 +16,7 @@ The MVP is done only when every item is checked, on a film **not used during dev
 ## Validity (on 3 films you know well)
 - [ ] Detected act breaks fall within ±5 min of the real ones (tolerance editable here: ____) — **failed on the evidence available, no longer claimed:** 0 of 7 found (DECISIONS #94), nothing above threshold on 3 more films (#107); the report now says 'largest shifts' (#108)
 - [ ] Tension curve peaks near the actual climax — **failed on the evidence available, no longer claimed:** 1 of 3 films with climaxes located from plot summaries (#107); the report now calls it intensity (#108)
-- [ ] Shot-cut detection spot-checked against hand-labelled 2-min clips (measured on real footage with frame-pair labels by the assistant, DECISIONS #83; not the owner's hand labels)
+- [x] Shot-cut detection spot-checked against labelled footage: public BBC Planet Earth episode 10 (49 min, CC-BY-4.0, labels by the dataset's authors): precision 82.9%, recall 81.2% of 341 cuts at 0.25 s (DECISIONS #109); earlier frame-pair labels by the assistant, #83. Not the owner's hand labels and not 2-minute clips
 
 Kill/pivot rule: if act-break detection misses on 2 of 3 films after a 3-day time-box, change the approach rather than keep tuning.
 
