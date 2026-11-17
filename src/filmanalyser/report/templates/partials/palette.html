@@ -12,4 +12,5 @@
 <ul class="swatches">
   {% for s in view.palette.swatches %}<li><svg class="chip" viewBox="0 0 1 1" aria-hidden="true"><rect width="1" height="1" fill="{{ s.fill }}"></rect></svg>{{ t('palette.share', percent=s.share_text) }}</li>{% endfor %}
 </ul>
+{% if view.palette.dark_text %}<p class="note">{{ t('palette.dark', percent=view.palette.dark_text) }}</p>{% endif %}
 {% endif %}

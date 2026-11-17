@@ -14,7 +14,7 @@ from typing import Any
 import numpy as np
 import numpy.typing as npt
 
-from filmanalyser.core.features import PALETTE_PARTS, PALETTE_SIZE, palette_column
+from filmanalyser.core.features import PALETTE_DARK, PALETTE_PARTS, PALETTE_SIZE, palette_column
 from filmanalyser.report.display import number_text
 
 MAX_COLUMNS = 120
@@ -56,6 +56,7 @@ class PaletteView:
     width: float
     columns: tuple[StripColumn, ...]
     swatches: tuple[Swatch, ...]
+    dark_text: str  # the film's average share of near-black (%); "" when not stored
 
 
 def _hex(colour: Colour) -> str:
@@ -120,4 +121,8 @@ def build_palette(columns: Columns) -> PaletteView | None:
     )
     overall = _ranked(_shares(slots, range(count)))[:SWATCHES]
     swatches = tuple(Swatch(_hex(c), number_text(_PERCENT * s, 0)) for c, s in overall)
-    return PaletteView(TOP, HEIGHT, WIDTH, strip, swatches)
+    dark = ""
+    if PALETTE_DARK in columns:
+        mean = float(np.nanmean(np.asarray(columns[PALETTE_DARK], dtype=np.float64)))
+        dark = number_text(_PERCENT * mean, 0)
+    return PaletteView(TOP, HEIGHT, WIDTH, strip, swatches, dark)

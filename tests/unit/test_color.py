@@ -96,13 +96,13 @@ def test_a_solid_picture_has_one_dominant_colour_holding_all_of_it() -> None:
 
 
 def test_colours_rank_by_share_and_shares_are_of_the_picture() -> None:
-    frames = solid((0, 0, 0))
-    frames[:, :, :6] = (255, 255, 255)  # 6 of 8 columns white, 2 black
+    frames = solid((0, 0, 255))
+    frames[:, :, :6] = (255, 255, 255)  # 6 of 8 columns white, 2 blue
     features = Color().extract(chunk_of(frames))
     assert _slot(features, 1)[3] == pytest.approx(0.75)
     assert _slot(features, 1)[:3] == pytest.approx((224 / 255,) * 3)
     assert _slot(features, 2)[3] == pytest.approx(0.25)
-    assert _slot(features, 2)[:3] == pytest.approx((32 / 255,) * 3)
+    assert _slot(features, 2)[:3] == pytest.approx((32 / 255, 32 / 255, 224 / 255))
 
 
 def test_equal_shares_are_ordered_by_colour_not_by_chance() -> None:
@@ -128,5 +128,27 @@ def test_letterbox_bars_are_not_in_the_palette() -> None:
     assert _slot(Color().extract(chunk_of(frames)), 1)[3] == pytest.approx(1.0)
 
 
-def test_the_version_is_bumped_for_the_palette() -> None:
-    assert EXTRACTOR.version == 2
+def test_near_black_is_left_out_of_the_palette_and_counted_on_its_own() -> None:
+    frames = solid((0, 0, 0))
+    frames[:, :, 4:] = (250, 10, 10)  # half the picture is black, half is red
+    features = Color().extract(chunk_of(frames))
+    assert _slot(features, 1)[3] == pytest.approx(0.5)  # a share of the whole picture
+    assert _slot(features, 1)[:3] == pytest.approx((224 / 255, 32 / 255, 32 / 255))
+    assert _slot(features, 2) == (0.0, 0.0, 0.0, 0.0)
+    assert features["palette_dark_share"] == pytest.approx(0.5)
+
+
+def test_a_black_picture_has_an_empty_palette_and_all_dark() -> None:
+    features = Color().extract(chunk_of(solid((5, 5, 5))))
+    assert _slot(features, 1) == (0.0, 0.0, 0.0, 0.0)
+    assert features["palette_dark_share"] == pytest.approx(1.0)
+
+
+def test_dark_but_coloured_pixels_stay_in_the_palette() -> None:
+    features = Color().extract(chunk_of(solid((20, 20, 100))))  # blue above 63: not near-black
+    assert _slot(features, 1)[3] == pytest.approx(1.0)
+    assert features["palette_dark_share"] == 0.0
+
+
+def test_the_version_is_bumped_for_the_palette_and_again_for_near_black() -> None:
+    assert EXTRACTOR.version == 3

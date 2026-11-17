@@ -22,6 +22,7 @@ CONTRAST = f"{COLOR}.contrast"
 COLOURFULNESS = f"{COLOR}.colourfulness"
 WARMTH = f"{COLOR}.warmth"
 PALETTE_SIZE = 3  # dominant colours kept per chunk (DECISIONS 106)
+PALETTE_DARK = f"{COLOR}.palette_dark_share"  # share of the picture that is near-black (not ranked)
 PALETTE_PARTS = ("red", "green", "blue", "share")  # red, green, blue in 0..1; share of the picture
 
 
