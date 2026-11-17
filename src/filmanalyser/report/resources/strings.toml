@@ -200,7 +200,7 @@ caption = "Integrated loudness per chunk. A gap is a chunk with no measurable so
 
 [chart.mix]
 label = "Speech, non-speech and tonal sound, and silence over the film"
-caption = "The share of each chunk's windows that are speech, non-speech and tonal, or silence."
+caption = "The share of each chunk's windows that are speech, non-speech and tonal, or silence, stacked from the bottom. Blank space is sound that is none of these."
 
 [chart.picture]
 label = "Brightness, contrast, colourfulness and warmth over the film"

@@ -185,3 +185,8 @@ def test_very_short_films_build_without_error(count: int) -> None:
 
 def test_a_store_without_a_palette_has_no_palette_section() -> None:
     assert view().palette is None
+
+
+def test_the_mix_chart_stacks_the_three_shares_instead_of_drawing_three_lines() -> None:
+    mix = next(c for c in view().charts if c.key == "chart.mix")
+    assert mix.lines == () and [a.style for a in mix.areas] == ["a1", "a2", "a3"]
