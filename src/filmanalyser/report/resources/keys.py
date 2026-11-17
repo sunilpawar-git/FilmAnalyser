@@ -8,6 +8,7 @@ SERIES_STYLES = (
     "s3",
     "s4",
 )  # a colour and a dash pattern each (templates/partials/style.html)
+AREA_STYLES = ("a1", "a2", "a3")  # a fill each, from the colour tokens (style.html)
 MARK_BREAK = "break"  # a vertical marker for an act break
 MARK_PEAK = "peak"  # a vertical marker for the tension peak
 MARK_BAND = "band"  # a shaded stretch (the legend swatch of a pacing plateau)

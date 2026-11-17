@@ -13,7 +13,13 @@ from filmanalyser.analysis.timeline import Timeline
 from filmanalyser.core import features as f
 from filmanalyser.report.charts import Chart, Frame, Marker, Notes, Series, Span, build_chart
 from filmanalyser.report.display import clock_text
-from filmanalyser.report.resources.keys import MARK_BREAK, MARK_PEAK, SERIES_STYLES, feature_key
+from filmanalyser.report.resources.keys import (
+    AREA_STYLES,
+    MARK_BREAK,
+    MARK_PEAK,
+    SERIES_STYLES,
+    feature_key,
+)
 
 _MIX = (f.SPEECH_RATIO, f.TONAL_RATIO, f.SILENCE_RATIO)
 _PICTURE = f.VIDEO_STATE_COLUMNS
@@ -24,6 +30,14 @@ def _lines(timeline: Timeline, names: tuple[str, ...]) -> tuple[Series, ...]:
     return tuple(
         Series(feature_key(name), style, timeline.series[name])
         for name, style in zip(names, SERIES_STYLES, strict=False)
+    )
+
+
+def _bands(timeline: Timeline) -> tuple[Series, ...]:
+    """The three shares, one stacked band each (a1 .. a3 are fills from the colour tokens)."""
+    return tuple(
+        Series(feature_key(name), style, timeline.series[name])
+        for name, style in zip(_MIX, AREA_STYLES, strict=True)
     )
 
 
@@ -81,7 +95,7 @@ def build_charts(
         )
     if all(name in timeline.series for name in _MIX):
         charts.append(
-            build_chart("chart.mix", frame, _lines(timeline, _MIX), _SHARE, Notes(breaks))
+            build_chart("chart.mix", frame, _bands(timeline), _SHARE, Notes(breaks, stacked=True))
         )
     present = tuple(name for name in _PICTURE if name in timeline.series)
     charts.append(

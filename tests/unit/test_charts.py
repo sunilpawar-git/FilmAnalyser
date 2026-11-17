@@ -4,6 +4,7 @@ draws them."""
 import numpy as np
 
 from filmanalyser.report.charts import (
+    Chart,
     Frame,
     Marker,
     Notes,
@@ -92,3 +93,44 @@ def test_nice_step_grows_with_the_film() -> None:
     assert nice_step(4.0) == 1
     assert nice_step(95.0) == 15
     assert nice_step(600.0) > nice_step(95.0)
+
+
+def stacked(values: list[list[float]]) -> Chart:
+    series = tuple(Series(f"l{i}", f"a{i + 1}", np.array(v)) for i, v in enumerate(values))
+    return build_chart("c", FRAME, series, y_range=(0.0, 1.0), notes=Notes(stacked=True))
+
+
+def test_a_stacked_chart_draws_bands_and_no_lines() -> None:
+    shown = stacked([[0.2] * 4, [0.3] * 4, [0.1] * 4])
+    assert shown.lines == () and len(shown.areas) == 3
+
+
+def test_each_band_lies_above_the_one_before_it() -> None:
+    shown = stacked([[0.2] * 4, [0.3] * 4])
+    first, second = (
+        [tuple(float(v) for v in p.split(",")) for p in a.points.split(" ")] for a in shown.areas
+    )
+    top_of_first = min(y for _, y in first)
+    bottom_of_second = max(y for _, y in second)
+    assert abs(top_of_first - bottom_of_second) < 0.11  # they meet along one edge (rounded)
+    assert min(y for _, y in second) < top_of_first  # the second sits higher on the page
+
+
+def test_a_band_is_closed_and_inside_the_plot_area() -> None:
+    shown = stacked([[0.0, 0.5, 1.0, 0.25]])
+    points = [tuple(float(v) for v in p.split(",")) for p in shown.areas[0].points.split(" ")]
+    assert len(points) == 8  # four along the top edge, four back along the bottom
+    for x, y in points:
+        assert shown.left <= x <= shown.right
+        assert shown.top <= y <= shown.bottom
+
+
+def test_a_missing_value_counts_as_nothing_in_a_stack() -> None:
+    shown = stacked([[0.5, np.nan, 0.5, 0.5]])
+    ys = [float(p.split(",")[1]) for p in shown.areas[0].points.split(" ")][:4]
+    assert ys[1] == shown.bottom
+
+
+def test_the_time_axis_title_clears_the_tick_labels() -> None:
+    shown = build_chart("c", FRAME, (Series("l", "s1", np.array([1.0, 2.0, 3.0, 4.0])),))
+    assert shown.axis_title_y - (shown.bottom + shown.tick_offset) >= 18.0

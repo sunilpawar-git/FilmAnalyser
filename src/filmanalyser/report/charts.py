@@ -16,11 +16,13 @@ from filmanalyser.report.resources.keys import MARK_BAND
 Values = npt.NDArray[np.float64]
 
 WIDTH = 640.0
-HEIGHT = 240.0
+HEIGHT = 262.0
 LEFT = 48.0  # room for the value labels
 RIGHT = WIDTH - 8.0
 TOP = 12.0
-BOTTOM = HEIGHT - 32.0  # room for the time labels
+BOTTOM = HEIGHT - 48.0  # room for the time labels and the axis title below them
+TICK_OFFSET = 16.0  # the time labels sit this far under the axis
+AXIS_TITLE_Y = HEIGHT - 8.0  # the axis title's baseline
 _STEPS_MINUTES = (1, 2, 5, 10, 15, 30, 60, 120, 240)
 _MAX_TICKS = 8
 _FLAT_SPAN = 1.0  # a series that does not vary is drawn in a range this wide
@@ -63,6 +65,7 @@ class Notes:
 
     markers: tuple[Marker, ...] = ()
     bands: tuple[Span, ...] = ()
+    stacked: bool = False  # draw the series as bands stacked from the bottom, not as lines
 
 
 @dataclass(frozen=True)
@@ -70,6 +73,13 @@ class Line:
     label_key: str
     style: str
     segments: tuple[str, ...]  # SVG "x,y x,y" lists; a gap in the data starts a new one
+
+
+@dataclass(frozen=True)
+class Area:
+    label_key: str
+    style: str  # a CSS class (a1 .. a3): a fill from the colour tokens
+    points: str  # SVG polygon: along the band's top edge, then back along its bottom edge
 
 
 @dataclass(frozen=True)
@@ -107,6 +117,9 @@ class Chart:
     x_ticks: tuple[Tick, ...]
     y_ticks: tuple[Tick, ...]
     legend: tuple[LegendEntry, ...]  # what the markers and bands mean, each once, in order
+    areas: tuple[Area, ...] = ()  # stacked bands (shares that add up), instead of lines
+    tick_offset: float = TICK_OFFSET
+    axis_title_y: float = AXIS_TITLE_Y
     width: float = WIDTH
     height: float = HEIGHT
     left: float = LEFT
@@ -157,6 +170,20 @@ def _segments(frame: Frame, values: Values, low: float, high: float) -> tuple[st
     return tuple(" ".join(r if len(r) > 1 else r * 2) for r in runs)
 
 
+def _areas(frame: Frame, lines: tuple[Series, ...], low: float, high: float) -> tuple[Area, ...]:
+    """Bands stacked from the bottom in series order; a missing value counts as nothing."""
+    xs = [_x(float(t), frame.film_s) for t in frame.middles]
+    floor = np.zeros(len(xs))
+    out = []
+    for s in lines:
+        ceiling = floor + np.where(np.isfinite(s.values), s.values, 0.0)
+        top = [f"{x},{_y(float(v), low, high)}" for x, v in zip(xs, ceiling, strict=True)]
+        base = [f"{x},{_y(float(v), low, high)}" for x, v in zip(xs, floor, strict=True)]
+        out.append(Area(s.label_key, s.style, " ".join([*top, *reversed(base)])))
+        floor = ceiling
+    return tuple(out)
+
+
 def _time_ticks(film_s: float) -> tuple[Tick, ...]:
     minutes = film_s / SECONDS_PER_MINUTE
     step = nice_step(minutes)
@@ -181,9 +208,12 @@ def build_chart(
     film_s, notes = frame.film_s, notes or Notes()
     return Chart(
         key=key,
-        lines=tuple(
+        lines=()
+        if notes.stacked
+        else tuple(
             Line(s.label_key, s.style, _segments(frame, s.values, low, high)) for s in lines
         ),
+        areas=_areas(frame, lines, low, high) if notes.stacked else (),
         markers=tuple(
             PlacedMarker(_x(m.seconds, film_s), m.kind, m.label_key, m.text) for m in notes.markers
         ),
