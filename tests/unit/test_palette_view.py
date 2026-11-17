@@ -20,6 +20,20 @@ def film(count: int, ranks: list[list[tuple[float, float, float, float]]]) -> Co
     return cols
 
 
+def test_the_near_black_share_is_the_average_over_the_film() -> None:
+    cols = dict(film(4, [[(*RED, 0.5)]]))
+    cols[f.PALETTE_DARK] = np.array([0.2, 0.4, 0.6, 0.8])
+    view = build_palette(cols)
+    assert view is not None
+    assert view.dark_text == "50"
+
+
+def test_a_store_made_without_the_near_black_column_still_has_a_palette() -> None:
+    view = build_palette(film(2, [[(*RED, 0.5)]]))
+    assert view is not None
+    assert view.dark_text == ""
+
+
 def test_a_store_without_a_palette_has_no_palette_view() -> None:
     assert build_palette(timeline(5)) is None
 

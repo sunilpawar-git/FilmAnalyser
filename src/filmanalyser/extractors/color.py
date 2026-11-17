@@ -18,7 +18,7 @@ from filmanalyser.extractors import palette
 from filmanalyser.extractors.letterbox import letterbox_bars
 
 NAME = "color"
-VERSION = 2  # 2: the palette (DECISIONS 106)
+VERSION = 3  # 2: the palette (DECISIONS 106); 3: near-black left out of it (DECISIONS 110)
 FEATURES = ("brightness", "contrast", "colourfulness", "warmth", "letterbox", *palette.FEATURES)
 
 

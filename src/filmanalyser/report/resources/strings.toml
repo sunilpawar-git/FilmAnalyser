@@ -169,13 +169,14 @@ colourfulness = "Colourfulness"
 warmth = "Warmth"
 
 [palette]
-note = "The most common colours of each chunk's picture (three per chunk, letterbox bars excluded), measured on a coarse grid of 64 colours. This is an observation of the picture, not a judgement of the film's look."
+note = "The most common colours of each chunk's picture (three per chunk, letterbox bars excluded), measured on a coarse grid of 64 colours, with near-black left out. This is an observation of the picture, not a judgement of the film's look."
 film = "The film's most common colours, by their average share of a chunk's picture:"
 share = "$percent%"
+dark = "Near-black (every colour channel below a quarter of full) is not counted as a colour; it makes up $percent% of the picture on average."
 
 [palette.strip]
 label = "The dominant colours of the film over time"
-caption = "One column per stretch of the film, left to right in film time; in each column the dominant colours are stacked from the top, taller for a larger share. Blank space is colour outside those three."
+caption = "One column per stretch of the film, left to right in film time; in each column the dominant colours are stacked from the top, taller for a larger share. Blank space is near-black or a colour outside those three."
 
 [chart.axis]
 time = "Film time (minutes)"

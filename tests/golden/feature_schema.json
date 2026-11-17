@@ -1,9 +1,9 @@
 {
- "version": "0faf2f2e95b4b9e62c8adbd49c4a3e9ef01bd93421c553b96ab058ea7cea5649",
+ "version": "99dfa7dea52bb2f92a3d5c0f4f460cb938f8daf8ed6812920798cec0aaaa209c",
  "extractors": [
   [
    "color",
-   2,
+   3,
    [
     "brightness",
     "contrast",
@@ -21,7 +21,8 @@
     "palette_3_red",
     "palette_3_green",
     "palette_3_blue",
-    "palette_3_share"
+    "palette_3_share",
+    "palette_dark_share"
    ]
   ],
   [

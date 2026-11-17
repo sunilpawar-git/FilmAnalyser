@@ -2,22 +2,27 @@
 
 Every pixel falls into one of LEVELS ** 3 cubes of RGB space (LEVELS cubes per channel). The
 PALETTE_SIZE most common cubes are the palette, each reported as its centre colour (0..1 per
-channel) and the share of the picture's pixels it holds. Equal shares are ordered by cube index, so
-the result never depends on chance. A cube nobody uses is reported as zeros with a share of 0. This
-module is a helper: it defines no EXTRACTOR and is not registered.
+channel) and the share of the picture's pixels it holds. Near-black (cube 0: every channel below
+a quarter of the scale) is not ranked, because shadow and night fill most films and would hide
+their colour; its share is reported on its own as `palette_dark_share` (DECISIONS 110). Equal shares
+are ordered by cube index, so the result never depends on chance. A cube nobody uses is reported as
+zeros with a share of 0. This module is a helper: it defines no EXTRACTOR and is not registered.
 """
 
 import numpy as np
 import numpy.typing as npt
 
 from filmanalyser.core.chunk import Frames
-from filmanalyser.core.features import PALETTE_PARTS, PALETTE_SIZE
+from filmanalyser.core.features import PALETTE_DARK, PALETTE_PARTS, PALETTE_SIZE
 
 LEVELS = 4  # per channel; a power of two
 _SHIFT = 8 - LEVELS.bit_length() + 1  # 8-bit value -> its level (6 for 4 levels)
 _CUBES = LEVELS**3
-FEATURES = tuple(
-    f"palette_{rank}_{part}" for rank in range(1, PALETTE_SIZE + 1) for part in PALETTE_PARTS
+_DARK_CUBE = 0  # every channel at level 0
+DARK_FEATURE = PALETTE_DARK.removeprefix("color.")
+FEATURES = (
+    *(f"palette_{rank}_{part}" for rank in range(1, PALETTE_SIZE + 1) for part in PALETTE_PARTS),
+    DARK_FEATURE,
 )
 
 
@@ -45,10 +50,12 @@ def _centre(cube: int) -> tuple[float, float, float]:
 
 def palette_features(counts: npt.NDArray[np.int64]) -> dict[str, float]:
     total = int(counts.sum())
-    order = np.argsort(-counts, kind="stable")[:PALETTE_SIZE]  # stable: ties go to the lower cube
-    out: dict[str, float] = {}
+    ranked = counts.copy()
+    ranked[_DARK_CUBE] = 0  # near-black is reported on its own, never ranked
+    order = np.argsort(-ranked, kind="stable")[:PALETTE_SIZE]  # stable: ties go to the lower cube
+    out: dict[str, float] = {DARK_FEATURE: int(counts[_DARK_CUBE]) / total if total else 0.0}
     for rank, cube in enumerate(order, 1):
-        held = int(counts[cube])
+        held = int(ranked[cube])
         colour = _centre(int(cube)) if held else (0.0, 0.0, 0.0)
         values = (*colour, held / total if total else 0.0)
         out.update(
